@@ -237,11 +237,15 @@ function shuffleArray(array) {
  * Preload artist images for smooth transitions
  */
 function preloadImages(startIndex, count = 5) {
+    // Don't try to preload if we have no artists
+    if (gameState.artists.length === 0) return;
+
     for (let i = 0; i < count; i++) {
         const index = (startIndex + i) % gameState.artists.length;
         const artist = gameState.artists[index];
 
-        if (artist.image && !preloadedImages.has(artist.id)) {
+        // Safety check: ensure artist exists
+        if (artist && artist.image && !preloadedImages.has(artist.id)) {
             const img = new Image();
             img.src = artist.image;
             preloadedImages.set(artist.id, img);
