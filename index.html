@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guess the Artist</title>
-    <link rel="stylesheet" href="v/9a20fde/src/css/styles.css">
+    <link rel="stylesheet" href="v/94ff2ee/src/css/styles.css">
 </head>
 <body>
     <div class="container">
@@ -144,6 +144,18 @@
                             </div>
 
                             <div class="input-group">
+                                <label for="game-mode">Game Mode:</label>
+                                <select id="game-mode">
+                                    <option value="individual">Individual Rounds</option>
+                                    <option value="swap-places">Swap Places (Team Round)</option>
+                                </select>
+                                <p style="font-size: 0.9rem; color: #b3b3b3; margin-top: 5px;">
+                                    <strong>Individual:</strong> Each player gets their own round.<br>
+                                    <strong>Swap Places:</strong> Team plays together. After each correct guess, players swap roles (singer ↔ guesser).
+                                </p>
+                            </div>
+
+                            <div class="input-group">
                                 <label for="min-popularity">Difficulty (Artist Popularity Filter):</label>
                                 <input type="range" id="min-popularity" min="0" max="100" value="0" step="5">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #b3b3b3; margin-top: 5px;">
@@ -185,8 +197,8 @@
     </div>
 
     <!-- Load scripts in order -->
-    <script src="v/9a20fde/src/js/config.js"></script>
-    <script src="v/9a20fde/src/js/spotify-client.js"></script>
-    <script src="v/9a20fde/src/js/game-setup.js"></script>
+    <script src="v/94ff2ee/src/js/config.js"></script>
+    <script src="v/94ff2ee/src/js/spotify-client.js"></script>
+    <script src="v/94ff2ee/src/js/game-setup.js"></script>
 </body>
 </html>
