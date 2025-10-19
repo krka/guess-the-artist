@@ -14,9 +14,26 @@ const SPOTIFY_CONFIG = {
     // Spotify App Client ID (public, safe to commit)
     clientId: 'ec5f94ae62a74407920a3cb46f916fe6',
 
-    // Redirect URI - automatically uses current origin
-    // Make sure this matches what you set in Spotify Dashboard
-    redirectUri: window.location.origin + window.location.pathname,
+    // Redirect URI - automatically adapts to environment
+    // Localhost: just the origin (http://localhost:8000)
+    // GitHub Pages: origin + repo path (https://krka.github.io/guess-the-artist/)
+    get redirectUri() {
+        const origin = window.location.origin;
+        const pathname = window.location.pathname;
+
+        // For localhost/127.0.0.1, just return origin
+        if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+            return origin;
+        }
+
+        // For GitHub Pages, return origin + base path (without index.html)
+        // Extract base path: /guess-the-artist/ from /guess-the-artist/index.html
+        const basePath = pathname.endsWith('.html')
+            ? pathname.substring(0, pathname.lastIndexOf('/') + 1)
+            : pathname;
+
+        return origin + basePath;
+    },
 
     // OAuth scopes we need
     scopes: [

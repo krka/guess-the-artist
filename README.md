@@ -22,10 +22,10 @@ Two players team up to identify music artists. One player sings, the other guess
 3. Fill in the details:
    - **App name**: guess-the-artist (or whatever you prefer)
    - **App description**: Music guessing game
-   - **Redirect URIs**: Add all three:
-     - `http://localhost:8000`
-     - `http://127.0.0.1:8000`
-     - `https://krka.github.io/guess-the-artist/`
+   - **Redirect URIs**: Add all three (exact match required):
+     - `http://localhost:8000` (no trailing slash)
+     - `http://127.0.0.1:8000` (no trailing slash)
+     - `https://krka.github.io/guess-the-artist/` (with trailing slash)
    - **API**: Select "Web API"
 4. Click "Save"
 5. Copy your **Client ID** (you won't need the Client Secret!)
