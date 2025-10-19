@@ -48,13 +48,12 @@ deploy:
 	@echo ""
 	@echo "Step 1: Copying files to gh-pages worktree..."
 	@rsync -av --delete \
-		--exclude='.git' \
-		--exclude='gh-pages' \
-		--exclude='.local-*.pem' \
-		--exclude='server.py' \
-		--exclude='Makefile' \
-		--exclude='PLAN.md' \
-		--exclude='DEPLOY.md' \
+		--include='*.html' \
+		--include='*.md' \
+		--include='src/***' \
+		--include='scripts/***' \
+		--include='v/README.md' \
+		--exclude='*' \
 		. gh-pages/
 	@echo ""
 	@echo "Step 2: Creating versioned assets in gh-pages..."
