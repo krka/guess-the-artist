@@ -25,19 +25,28 @@ const statusMessage = document.getElementById('status-message');
 window.addEventListener('DOMContentLoaded', async () => {
     spotifyClient = new SpotifyClient();
 
+    console.log('Page loaded, checking auth state...');
+    console.log('URL has code param:', window.location.search.includes('code='));
+    console.log('Is authenticated:', spotifyClient.isAuthenticated());
+    console.log('Refresh token exists:', !!localStorage.getItem('spotify_refresh_token'));
+
     // Check if this is an OAuth callback
     if (window.location.search.includes('code=')) {
+        console.log('Handling OAuth callback...');
         showStatus('Completing login...', 'info');
         try {
             await spotifyClient.handleCallback();
+            console.log('OAuth callback completed');
             await initializeAuthenticatedUI();
         } catch (error) {
+            console.error('OAuth callback failed:', error);
             showStatus(`Login failed: ${error.message}`, 'error');
             showLoginUI();
         }
     }
     // Check if user is already logged in
     else if (spotifyClient.isAuthenticated()) {
+        console.log('User is authenticated, initializing UI...');
         try {
             await initializeAuthenticatedUI();
         } catch (error) {
@@ -48,6 +57,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     // Show login UI
     else {
+        console.log('User not authenticated, showing login UI');
         showLoginUI();
     }
 
