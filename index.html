@@ -9,26 +9,16 @@
 <body>
     <div class="container">
         <header>
-            <h1>Guess the Artist - Debug View</h1>
-            <p class="subtitle">Spotify OAuth PKCE Integration</p>
+            <h1>Guess the Artist</h1>
+            <p class="subtitle">A Music Guessing Game</p>
         </header>
 
         <!-- Login Section (shown when not authenticated) -->
         <section class="auth-section" id="auth-section">
             <div class="auth-card">
-                <h2>Connect with Spotify</h2>
-                <p>Log in with your Spotify account to fetch your personalized top artists!</p>
+                <h2>Welcome to Guess the Artist!</h2>
+                <p>Connect with Spotify to play with your personalized music collection.</p>
                 <button id="login-button" class="btn-primary">Login with Spotify</button>
-
-                <div class="info-box">
-                    <h3>Setup Instructions</h3>
-                    <ol>
-                        <li>Open <code>src/js/config.js</code></li>
-                        <li>Replace <code>YOUR_CLIENT_ID_HERE</code> with your Spotify Client ID</li>
-                        <li>Make sure your redirect URI matches in Spotify Dashboard</li>
-                    </ol>
-                    <p class="note">No client secret needed with PKCE!</p>
-                </div>
             </div>
         </section>
 

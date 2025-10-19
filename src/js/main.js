@@ -32,9 +32,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         showStatus('Completing login...', 'info');
         try {
             await spotifyClient.handleCallback();
+            console.log('OAuth callback successful');
             showStatus('Login successful!', 'success');
             await initializeAuthenticatedUI();
+            console.log('Authenticated UI initialized');
         } catch (error) {
+            console.error('OAuth callback error:', error);
             showStatus(`Login failed: ${error.message}`, 'error');
             showLoginUI();
         }
@@ -103,8 +106,10 @@ function handleLogout() {
  */
 async function initializeAuthenticatedUI() {
     try {
+        console.log('Fetching user profile...');
         // Fetch user profile
         const user = await spotifyClient.getCurrentUser();
+        console.log('User profile fetched:', user);
         userName.textContent = `Logged in as ${user.display_name || user.id}`;
 
         // Show controls, hide auth section
@@ -113,6 +118,7 @@ async function initializeAuthenticatedUI() {
 
         showStatus('Ready to fetch artists!', 'success');
     } catch (error) {
+        console.error('Failed to initialize authenticated UI:', error);
         throw new Error(`Failed to load user profile: ${error.message}`);
     }
 }
