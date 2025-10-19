@@ -449,17 +449,17 @@ class SpotifyClient {
 
                 const data = await response.json();
 
-                // Extract unique artists
+                // Extract unique artists (primary artist only, skip features)
                 data.items.forEach(item => {
-                    if (item.track && item.track.artists) {
-                        item.track.artists.forEach(artist => {
-                            if (!artistsMap.has(artist.id)) {
-                                artistsMap.set(artist.id, {
-                                    id: artist.id,
-                                    name: artist.name,
-                                });
-                            }
-                        });
+                    if (item.track && item.track.artists && item.track.artists.length > 0) {
+                        // Only take the first artist (primary), not featured artists
+                        const artist = item.track.artists[0];
+                        if (!artistsMap.has(artist.id)) {
+                            artistsMap.set(artist.id, {
+                                id: artist.id,
+                                name: artist.name,
+                            });
+                        }
                     }
                 });
 
@@ -629,19 +629,4 @@ class SpotifyClient {
         }
     }
 
-    /**
-     * Known Spotify Top 50 playlist IDs by country
-     */
-    getTop50PlaylistId(country) {
-        const playlistIds = {
-            'global': '37i9dQZEVXbMDoHDwVN2tF',  // Global Top 50
-            'usa': '37i9dQZEVXbLRQDuF5jeBp',     // USA Top 50
-            'uk': '37i9dQZEVXbLnolsZ8PSNw',      // UK Top 50
-            'sweden': '37i9dQZEVXbLoATJ81JYXz',  // Sweden Top 50
-            'japan': '37i9dQZEVXbKXQ4mDTEBXq',   // Japan Top 50
-            'brazil': '37i9dQZEVXbMXbN3EUUhlg'   // Brazil Top 50
-        };
-
-        return playlistIds[country] || null;
-    }
 }

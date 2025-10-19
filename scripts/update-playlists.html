@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Magic Playlists</title>
+    <link rel="stylesheet" href="../src/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Update Magic Playlists</h1>
+            <p class="subtitle">Search for official Spotify playlists and update playlist IDs</p>
+        </header>
+
+        <section class="game-setup">
+            <div class="setup-card">
+                <div class="user-info">
+                    <span id="user-name">Not logged in</span>
+                    <button id="login-button" class="btn-secondary">Login with Spotify</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="search-query">Search for playlist:</label>
+                    <input type="text" id="search-query" placeholder="e.g., Top 50 Global">
+                    <button id="search-button" class="btn-primary" disabled>Search</button>
+                </div>
+
+                <div id="results" style="margin-top: 30px;"></div>
+
+                <div id="generated-config" class="hidden" style="margin-top: 30px;">
+                    <h3>Generated Config</h3>
+                    <p>Copy this and update <code>src/js/magic-playlists.json</code>:</p>
+                    <textarea id="config-output" style="width: 100%; height: 200px; font-family: monospace; padding: 10px; background: #191414; color: #1db954; border: 1px solid #404040; border-radius: 8px;"></textarea>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="../src/js/config.js"></script>
+    <script src="../src/js/spotify-client.js"></script>
+    <script>
+        let spotifyClient = null;
+        let foundPlaylists = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            spotifyClient = new SpotifyClient();
+
+            if (window.location.search.includes('code=')) {
+                await spotifyClient.handleCallback();
+                await init();
+            } else if (spotifyClient.isAuthenticated()) {
+                await init();
+            }
+
+            document.getElementById('login-button').addEventListener('click', async () => {
+                await spotifyClient.redirectToSpotifyAuth();
+            });
+
+            document.getElementById('search-button').addEventListener('click', searchPlaylists);
+        });
+
+        async function init() {
+            const user = await spotifyClient.getCurrentUser();
+            document.getElementById('user-name').textContent = `Logged in as ${user.display_name || user.id}`;
+            document.getElementById('search-button').disabled = false;
+        }
+
+        async function searchPlaylists() {
+            const query = document.getElementById('search-query').value.trim();
+            if (!query) return;
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Searching...</p>';
+
+            try {
+                await spotifyClient.ensureAuthenticated();
+
+                const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=playlist&limit=20`, {
+                    headers: {
+                        'Authorization': `Bearer ${spotifyClient.accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    resultsDiv.innerHTML = `<p style="color: #e74c3c;">Error: ${response.status} ${response.statusText}</p>`;
+                    return;
+                }
+
+                const data = await response.json();
+                const playlists = data.playlists.items;
+
+                if (playlists.length === 0) {
+                    resultsDiv.innerHTML = '<p>No playlists found</p>';
+                    return;
+                }
+
+                let html = '<h3>Search Results (click to add):</h3>';
+                playlists.forEach(playlist => {
+                    const isSpotifyOfficial = playlist.owner.id === 'spotify';
+                    html += `
+                        <div style="padding: 15px; margin: 10px 0; background: ${isSpotifyOfficial ? 'rgba(29, 185, 84, 0.1)' : 'rgba(64, 64, 64, 0.3)'}; border: 1px solid ${isSpotifyOfficial ? 'rgba(29, 185, 84, 0.5)' : '#404040'}; border-radius: 8px; cursor: pointer;" onclick="addPlaylist('${playlist.id}', '${escapeHtml(playlist.name)}', '${playlist.owner.display_name}', ${playlist.tracks.total})">
+                            <strong style="color: ${isSpotifyOfficial ? '#1db954' : '#fff'};">${playlist.name}</strong>
+                            ${isSpotifyOfficial ? ' <span style="color: #1db954;">✓ Official</span>' : ''}
+                            <br>
+                            Owner: ${playlist.owner.display_name}<br>
+                            Tracks: ${playlist.tracks.total}<br>
+                            ID: <code style="font-size: 0.9em;">${playlist.id}</code>
+                        </div>
+                    `;
+                });
+
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: #e74c3c;">Error: ${error.message}</p>`;
+            }
+        }
+
+        function addPlaylist(id, name, owner, trackCount) {
+            foundPlaylists.push({ id, name, owner, trackCount });
+            updateConfig();
+            alert(`Added: ${name}`);
+        }
+
+        function updateConfig() {
+            const config = {};
+            foundPlaylists.forEach(p => {
+                // Generate a key based on the name
+                const key = p.name.toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/^_|_$/g, '');
+                config[key] = {
+                    id: p.id,
+                    name: p.name,
+                    info: `${p.trackCount} tracks by ${p.owner}`
+                };
+            });
+
+            document.getElementById('config-output').value = JSON.stringify(config, null, 2);
+            document.getElementById('generated-config').classList.remove('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

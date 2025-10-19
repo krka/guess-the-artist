@@ -12,12 +12,6 @@ let selectedPlaylistIds = [];
 const MAGIC_SOURCES = [
     { id: '__top_artists__', name: 'My Top Artists', info: 'Based on your listening history' },
     { id: '__related_artists__', name: 'Related Artists', info: 'Artists similar to your favorites' },
-    { id: '__global_top_50__', name: 'Global Top 50', info: 'Most popular worldwide' },
-    { id: '__top_usa__', name: 'Top 50 USA', info: 'Most popular in United States' },
-    { id: '__top_uk__', name: 'Top 50 UK', info: 'Most popular in United Kingdom' },
-    { id: '__top_sweden__', name: 'Top 50 Sweden', info: 'Most popular in Sweden' },
-    { id: '__top_japan__', name: 'Top 50 Japan', info: 'Most popular in Japan' },
-    { id: '__top_brazil__', name: 'Top 50 Brazil', info: 'Most popular in Brazil' },
     { id: '__decade_1960s__', name: 'Best of 1960s', info: 'Classic artists from the 60s' },
     { id: '__decade_1970s__', name: 'Best of 1970s', info: 'Classic artists from the 70s' },
     { id: '__decade_1980s__', name: 'Best of 1980s', info: 'Classic artists from the 80s' },
@@ -114,6 +108,15 @@ function setupEventListeners() {
             filterPlaylists(e.target.value);
         });
     }
+
+    // Update popularity value display
+    const minPopularitySlider = document.getElementById('min-popularity');
+    const popularityValueDisplay = document.getElementById('popularity-value');
+    if (minPopularitySlider && popularityValueDisplay) {
+        minPopularitySlider.addEventListener('input', (e) => {
+            popularityValueDisplay.textContent = e.target.value;
+        });
+    }
 }
 
 
@@ -150,6 +153,9 @@ async function initializeAuthenticatedUI() {
     gameSetupSection.classList.remove('hidden');
     console.log('UI sections toggled');
 
+    // Restore saved state
+    restoreSavedState();
+
     // Load playlists immediately
     loadPlaylists();
 
@@ -164,6 +170,43 @@ async function initializeAuthenticatedUI() {
         console.error('Failed to fetch user profile:', error);
         userName.textContent = 'Logged in';
         showStatus('Ready to set up your game!', 'success');
+    }
+}
+
+/**
+ * Restore saved state from localStorage
+ */
+function restoreSavedState() {
+    try {
+        // Restore teams
+        const savedTeams = localStorage.getItem('savedTeams');
+        if (savedTeams) {
+            teams = JSON.parse(savedTeams);
+            renderTeams();
+            updateStartButtonState();
+            console.log('Restored teams:', teams);
+        }
+
+        // Restore selected playlists
+        const savedPlaylists = localStorage.getItem('savedPlaylists');
+        if (savedPlaylists) {
+            selectedPlaylistIds = JSON.parse(savedPlaylists);
+            console.log('Restored selected playlists:', selectedPlaylistIds);
+        }
+    } catch (error) {
+        console.error('Failed to restore saved state:', error);
+    }
+}
+
+/**
+ * Save state to localStorage
+ */
+function saveState() {
+    try {
+        localStorage.setItem('savedTeams', JSON.stringify(teams));
+        localStorage.setItem('savedPlaylists', JSON.stringify(selectedPlaylistIds));
+    } catch (error) {
+        console.error('Failed to save state:', error);
     }
 }
 
@@ -208,6 +251,7 @@ function addTeam() {
     teams.push(team);
     renderTeams();
     updateStartButtonState();
+    saveState();
 
     // Clear input
     newTeamPlayersInput.value = '';
@@ -221,6 +265,7 @@ function removeTeam(teamId) {
     teams = teams.filter(t => t.id !== teamId);
     renderTeams();
     updateStartButtonState();
+    saveState();
 }
 
 /**
@@ -235,6 +280,7 @@ function updateTeamMembers(teamId, membersText) {
             .map(m => m.trim())
             .filter(m => m.length > 0);
         updateStartButtonState();
+        saveState();
     }
 }
 
@@ -285,6 +331,7 @@ function updateTeamName(teamId, newName) {
     const team = teams.find(t => t.id === teamId);
     if (team) {
         team.name = newName.trim() || `Team ${teams.indexOf(team) + 1}`;
+        saveState();
     }
 }
 
@@ -328,8 +375,20 @@ async function loadPlaylists() {
         playlistsList.classList.remove('hidden');
     } catch (error) {
         console.error('Failed to load playlists:', error);
-        showStatus(`Failed to load playlists: ${error.message}`, 'error');
+
+        // Show specific error message
+        let errorMsg = 'Could not load your playlists. ';
+        if (error.message.includes('401') || error.message.includes('Session expired')) {
+            errorMsg += 'Your session may have expired. Try logging out and back in.';
+        } else if (error.message.includes('403')) {
+            errorMsg += 'Permission denied. Please re-authorize the app.';
+        } else {
+            errorMsg += 'You can still use Magic Sources (My Top Artists, Decades, Related Artists).';
+        }
+
+        showStatus(errorMsg, 'error');
         playlistsLoading.classList.add('hidden');
+
         // Still show magic sources even if playlists fail
         renderPlaylists();
         playlistsList.classList.remove('hidden');
@@ -477,6 +536,7 @@ function addPlaylist(playlistId) {
             renderPlaylists('');
         }
 
+        saveState();
         console.log('Added playlist:', playlistId);
     }
 }
@@ -490,6 +550,7 @@ function removePlaylist(playlistId) {
         selectedPlaylistIds.splice(index, 1);
         renderPlaylists(playlistFilter.value);
         renderSelectedPlaylists();
+        saveState();
         console.log('Removed playlist:', playlistId);
     }
 }
@@ -501,6 +562,7 @@ function startGame() {
     const roundDuration = parseInt(document.getElementById('round-duration').value);
     const artistCount = parseInt(document.getElementById('artist-count').value);
     const timeRange = document.getElementById('time-range').value;
+    const minPopularity = parseInt(document.getElementById('min-popularity').value);
 
     // Validate at least one source is selected
     if (selectedPlaylistIds.length === 0) {
@@ -531,7 +593,8 @@ function startGame() {
         artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
         artistCount: artistCount,
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs
-        timeRange: timeRange  // For top artists
+        timeRange: timeRange,  // For top artists
+        minPopularity: minPopularity  // Filter out obscure artists
     };
 
     // Save to localStorage for the game page
