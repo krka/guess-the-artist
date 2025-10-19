@@ -92,16 +92,6 @@ function setupEventListeners() {
     addTeamButton.addEventListener('click', addTeam);
     startGameButton.addEventListener('click', startGame);
 
-    // Add team on Enter key
-    const newTeamPlayersInput = document.getElementById('new-team-players');
-    if (newTeamPlayersInput) {
-        newTeamPlayersInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                addTeam();
-            }
-        });
-    }
-
     // Filter playlists as user types
     if (playlistFilter) {
         playlistFilter.addEventListener('input', (e) => {
@@ -259,31 +249,11 @@ function showLoginUI() {
  * Add a new team
  */
 function addTeam() {
-    const newTeamPlayersInput = document.getElementById('new-team-players');
-    const playersText = newTeamPlayersInput.value.trim();
-
-    if (!playersText) {
-        showStatus('Please enter player names', 'error');
-        return;
-    }
-
-    // Parse players - use comma if present, otherwise space
-    const separator = playersText.includes(',') ? ',' : ' ';
-    const members = playersText
-        .split(separator)
-        .map(m => m.trim())
-        .filter(m => m.length > 0);
-
-    if (members.length < 2) {
-        showStatus('A team needs at least 2 players', 'error');
-        return;
-    }
-
     const teamNumber = teams.length + 1;
     const team = {
         id: `team-${Date.now()}`,
         name: `Team ${teamNumber}`,
-        members: members,
+        members: [],
         enabled: true
     };
 
@@ -292,9 +262,13 @@ function addTeam() {
     updateStartButtonState();
     saveState();
 
-    // Clear input
-    newTeamPlayersInput.value = '';
-    showStatus(`Team ${teamNumber} added with ${members.length} players!`, 'success');
+    // Focus on the new team's input
+    setTimeout(() => {
+        const newTeamInput = document.querySelector(`[data-team-id="${team.id}"] .team-members-input`);
+        if (newTeamInput) {
+            newTeamInput.focus();
+        }
+    }, 50);
 }
 
 /**
@@ -328,44 +302,33 @@ function updateTeamMembers(teamId, membersText) {
  */
 function renderTeams() {
     if (teams.length === 0) {
-        teamsList.innerHTML = '<p class="empty-state">No teams yet. Click "+ Add Team" to get started!</p>';
+        teamsList.innerHTML = '<p class="empty-state">No teams yet. Click "+ New Team" to get started!</p>';
         return;
     }
 
     teamsList.innerHTML = teams.map(team => `
-        <div class="team-card ${team.enabled === false ? 'disabled' : ''}" data-team-id="${team.id}">
-            <div class="team-header">
-                <label class="team-checkbox-label">
-                    <input
-                        type="checkbox"
-                        ${team.enabled !== false ? 'checked' : ''}
-                        onchange="toggleTeam('${team.id}', this.checked)"
-                        title="Enable/disable team"
-                    />
-                </label>
+        <div class="team-row ${team.enabled === false ? 'disabled' : ''}" data-team-id="${team.id}">
+            <button
+                class="btn-remove-inline"
+                onclick="removeTeam('${team.id}')"
+                title="Remove team"
+            >×</button>
+            <label class="team-checkbox-inline">
                 <input
-                    type="text"
-                    class="team-name-input"
-                    value="${team.name}"
-                    onchange="updateTeamName('${team.id}', this.value)"
-                    placeholder="Team name"
+                    type="checkbox"
+                    ${team.enabled !== false ? 'checked' : ''}
+                    onchange="toggleTeam('${team.id}', this.checked)"
+                    title="Enable/disable team"
                 />
-                <button
-                    class="btn-remove"
-                    onclick="removeTeam('${team.id}')"
-                    title="Remove team"
-                >×</button>
-            </div>
-            <div class="team-members">
-                <input
-                    type="text"
-                    class="members-input"
-                    value="${team.members.join(', ')}"
-                    onchange="updateTeamMembers('${team.id}', this.value)"
-                    placeholder="e.g., Alice, Bob"
-                />
-                <div class="member-count">${team.members.length} player${team.members.length === 1 ? '' : 's'}</div>
-            </div>
+            </label>
+            <span class="team-label">${team.name}:</span>
+            <input
+                type="text"
+                class="team-members-input"
+                value="${team.members.join(', ')}"
+                onchange="updateTeamMembers('${team.id}', this.value)"
+                placeholder="Player names (e.g., Alice, Bob)"
+            />
         </div>
     `).join('');
 }
@@ -398,12 +361,16 @@ function toggleTeam(teamId, enabled) {
  * Update start button state
  */
 function updateStartButtonState() {
-    // Enable start button if at least one enabled team has at least 2 members
-    const enabledTeams = teams.filter(team => team.enabled !== false);
-    const hasValidTeam = enabledTeams.some(team => team.members.length >= 2);
-    startGameButton.disabled = !hasValidTeam;
+    // Enable start button if at least one enabled, non-empty team has at least 2 members
+    const validTeams = teams.filter(team =>
+        team.enabled !== false &&
+        team.members.length >= 2
+    );
 
-    if (!hasValidTeam && teams.length > 0) {
+    startGameButton.disabled = validTeams.length === 0;
+
+    if (validTeams.length === 0 && teams.length > 0) {
+        const enabledTeams = teams.filter(team => team.enabled !== false);
         if (enabledTeams.length === 0) {
             startGameButton.title = 'Enable at least one team to start';
         } else {
@@ -688,15 +655,18 @@ async function startGame() {
         }
     });
 
-    // Filter to only enabled teams
-    const enabledTeams = teams.filter(team => team.enabled !== false);
+    // Filter to only enabled, non-empty teams with at least 2 players
+    const validTeams = teams.filter(team =>
+        team.enabled !== false &&
+        team.members.length >= 2
+    );
 
     // Calculate total game time needed
-    const totalPlayerCount = enabledTeams.reduce((sum, team) => sum + team.members.length, 0);
+    const totalPlayerCount = validTeams.reduce((sum, team) => sum + team.members.length, 0);
     const totalGameSeconds = totalPlayerCount * roundDuration;
 
     const gameConfig = {
-        teams: enabledTeams,
+        teams: validTeams,
         playerDuration: roundDuration,  // Time per player (exactly what's in the setting)
         artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs

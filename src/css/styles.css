@@ -492,6 +492,84 @@ select:focus {
     font-style: italic;
 }
 
+/* Team Row (Simplified) */
+.team-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: var(--secondary-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+    border: 1px solid #404040;
+    transition: opacity 0.3s ease;
+}
+
+.team-row.disabled {
+    opacity: 0.5;
+}
+
+.btn-remove-inline {
+    background-color: transparent;
+    border: 1px solid #404040;
+    color: #e74c3c;
+    font-size: 1.2rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.btn-remove-inline:hover {
+    background-color: #e74c3c;
+    color: var(--text-color);
+    border-color: #e74c3c;
+}
+
+.team-checkbox-inline {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.team-checkbox-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.team-label {
+    font-weight: 600;
+    color: var(--primary-color);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.team-members-input {
+    flex: 1;
+    padding: 8px;
+    background-color: var(--card-bg);
+    border: 1px solid #404040;
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.team-members-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.team-members-input::placeholder {
+    color: #666;
+}
+
 /* Game Settings */
 .game-settings {
     background-color: var(--secondary-color);

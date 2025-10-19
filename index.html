@@ -51,22 +51,13 @@
                     <div class="tab-content">
                         <!-- Tab 1: Teams -->
                         <div class="tab-pane active" id="tab-teams">
-                            <div class="add-team-form">
-                                <label for="new-team-players">Players:</label>
-                                <div class="add-team-controls">
-                                    <input
-                                        type="text"
-                                        id="new-team-players"
-                                        class="team-input"
-                                        placeholder="e.g., Alice Bob or Alice, Bob"
-                                    />
-                                    <button id="add-team-button" class="btn-secondary">Add Team</button>
-                                </div>
-                            </div>
-
                             <div id="teams-list" class="teams-list">
                                 <!-- Teams will be dynamically added here -->
                             </div>
+
+                            <button id="add-team-button" class="btn-secondary" style="margin-top: 15px;">
+                                + New Team
+                            </button>
                         </div>
 
                         <!-- Tab 2: Artist Sources -->
