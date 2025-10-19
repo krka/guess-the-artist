@@ -572,11 +572,35 @@ function removePlaylist(playlistId) {
 /**
  * Start the game
  */
-function startGame() {
+async function startGame() {
     const roundDuration = parseInt(document.getElementById('round-duration').value);
-    const artistCount = parseInt(document.getElementById('artist-count').value);
     const timeRange = document.getElementById('time-range').value;
     const minPopularity = parseInt(document.getElementById('min-popularity').value);
+
+    // Validate authentication BEFORE navigating
+    try {
+        showStatus('Checking session...', 'info');
+        await spotifyClient.ensureAuthenticated();
+    } catch (error) {
+        console.error('Authentication check failed:', error);
+        console.error('Error details:', {
+            message: error.message,
+            hasRefreshToken: !!localStorage.getItem('spotify_refresh_token'),
+            hasAccessToken: !!spotifyClient.accessToken,
+            tokenExpiry: spotifyClient.tokenExpiry ? new Date(spotifyClient.tokenExpiry).toISOString() : 'none'
+        });
+
+        // Show user-friendly error message
+        let userMessage = error.message;
+        if (error.message.includes('server_error') || error.message.includes('Failed to remove token')) {
+            userMessage = 'Spotify is having temporary issues. Please try again in a moment.';
+        } else if (error.message.includes('Session expired') || error.message.includes('No refresh token')) {
+            userMessage = 'Your session has expired. Please log out and log back in.';
+        }
+
+        showStatus(userMessage, 'error');
+        return;
+    }
 
     // Validate at least one source is selected
     if (selectedPlaylistIds.length === 0) {
@@ -610,7 +634,6 @@ function startGame() {
         teams: teams,
         roundDuration: roundDuration,
         artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
-        artistCount: artistCount,
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs
         timeRange: timeRange,  // For top artists
         minPopularity: minPopularity,  // Filter out obscure artists

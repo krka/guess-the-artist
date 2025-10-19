@@ -24,6 +24,8 @@ A web-based music guessing game inspired by the Swedish gameshow "Doobidoo" segm
 
 ## Development
 
+### Local Development
+
 Run locally with HTTPS (required by Spotify OAuth):
 ```bash
 make run-local
@@ -31,10 +33,29 @@ make run-local
 
 Visit https://127.0.0.1:8443
 
-Deploy to GitHub Pages:
-```bash
-make deploy
-```
+### Deployment
+
+The project uses commit-hash-based versioning to avoid stale file caching issues:
+
+1. **Make your changes** in `src/` and test locally
+2. **Commit your changes** to git
+3. **Prepare deployment**:
+   ```bash
+   ./deploy.sh
+   ```
+   This creates a versioned copy of assets in `v/$HASH/` and updates HTML files
+4. **Commit deployment**:
+   ```bash
+   git add -A
+   git commit -m "Deploy $(git rev-parse --short HEAD)"
+   git push origin master
+   ```
+5. **Back to development mode**:
+   ```bash
+   ./dev.sh
+   ```
+
+See `v/README.md` for details on the versioning system.
 
 ## Tech Stack
 

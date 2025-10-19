@@ -127,6 +127,13 @@ class SpotifyClient {
             this.refreshToken = data.refresh_token;
             this.tokenExpiry = Date.now() + data.expires_in * 1000;
 
+            console.log('OAuth callback successful, tokens stored:', {
+                hasAccessToken: !!this.accessToken,
+                hasRefreshToken: !!this.refreshToken,
+                tokenExpiry: new Date(this.tokenExpiry).toISOString(),
+                expiresIn: data.expires_in
+            });
+
             // Save refresh token to localStorage for persistence
             localStorage.setItem('spotify_refresh_token', this.refreshToken);
 
@@ -144,10 +151,17 @@ class SpotifyClient {
     }
 
     /**
-     * Refresh access token using refresh token
+     * Refresh access token using refresh token (with retry for server errors)
      */
-    async refreshAccessToken() {
+    async refreshAccessToken(retryCount = 0) {
         const refreshToken = this.refreshToken || localStorage.getItem('spotify_refresh_token');
+
+        console.log('Attempting to refresh access token...', {
+            hasRefreshToken: !!refreshToken,
+            hasAccessToken: !!this.accessToken,
+            tokenExpiry: this.tokenExpiry ? new Date(this.tokenExpiry).toISOString() : 'none',
+            retry: retryCount
+        });
 
         if (!refreshToken) {
             throw new Error('No refresh token available. Please log in again.');
@@ -166,10 +180,33 @@ class SpotifyClient {
                 }),
             });
 
+            console.log('Token refresh response:', response.status, response.statusText);
+
             if (!response.ok) {
-                // Refresh token is invalid, user needs to re-login
-                this.logout();
-                throw new Error('Session expired. Please log in again.');
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { error: 'unknown', error_description: errorText };
+                }
+
+                console.error('Token refresh failed:', response.status, errorData);
+
+                // Retry on server errors (500-599) up to 3 times
+                if (response.status >= 500 && retryCount < 3) {
+                    const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+                    console.log(`Retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return this.refreshAccessToken(retryCount + 1);
+                }
+
+                // Don't logout on server errors - token might still be valid
+                if (response.status < 500) {
+                    this.logout();
+                }
+
+                throw new Error(`Token refresh failed: ${errorData.error_description || errorData.error || response.statusText}`);
             }
 
             const data = await response.json();
@@ -194,10 +231,19 @@ class SpotifyClient {
      * Ensure we have a valid access token
      */
     async ensureAuthenticated() {
+        console.log('ensureAuthenticated called', {
+            hasAccessToken: !!this.accessToken,
+            hasRefreshTokenInMemory: !!this.refreshToken,
+            hasRefreshTokenInStorage: !!localStorage.getItem('spotify_refresh_token'),
+            tokenExpiry: this.tokenExpiry ? new Date(this.tokenExpiry).toISOString() : 'none',
+            isExpired: this.tokenExpiry ? (Date.now() >= this.tokenExpiry - 5 * 60 * 1000) : 'N/A'
+        });
+
         // If no access token, try to restore from refresh token
         if (!this.accessToken) {
             const refreshToken = localStorage.getItem('spotify_refresh_token');
             if (refreshToken) {
+                console.log('No access token, restoring from refresh token...');
                 this.refreshToken = refreshToken;
                 await this.refreshAccessToken();
                 return;
@@ -207,6 +253,7 @@ class SpotifyClient {
 
         // If token is expired or about to expire (within 5 min), refresh it
         if (Date.now() >= this.tokenExpiry - 5 * 60 * 1000) {
+            console.log('Access token expired or expiring soon, refreshing...');
             await this.refreshAccessToken();
         }
     }

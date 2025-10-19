@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guess the Artist - Game</title>
-    <link rel="stylesheet" href="src/css/styles.css">
+    <link rel="stylesheet" href="v/ca8affb/src/css/styles.css">
 </head>
 <body>
     <div class="container">
@@ -14,6 +14,23 @@
 
         <!-- Game View -->
         <section class="game-view" id="game-view">
+            <!-- Error Phase -->
+            <div class="game-phase hidden" id="phase-error">
+                <div class="game-card">
+                    <h2 style="color: var(--error-color);">Error Loading Game</h2>
+                    <div class="error-details">
+                        <p id="error-message" style="white-space: pre-wrap; margin: 20px 0;"></p>
+                        <div id="error-debug" style="background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); margin: 20px 0; text-align: left;">
+                            <p style="font-weight: bold; margin-bottom: 10px;">Debug Information:</p>
+                            <pre id="error-debug-content" style="font-size: 0.85rem; color: #b3b3b3; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;"></pre>
+                        </div>
+                    </div>
+                    <button id="error-back-button" class="btn-primary btn-large" onclick="window.location.href='index.html'">
+                        Back to Setup
+                    </button>
+                </div>
+            </div>
+
             <!-- Ready Phase -->
             <div class="game-phase hidden" id="phase-ready">
                 <div class="game-card">
@@ -132,8 +149,8 @@
     </div>
 
     <!-- Load scripts in order -->
-    <script src="src/js/config.js"></script>
-    <script src="src/js/spotify-client.js"></script>
-    <script src="src/js/game.js"></script>
+    <script src="v/ca8affb/src/js/config.js"></script>
+    <script src="v/ca8affb/src/js/spotify-client.js"></script>
+    <script src="v/ca8affb/src/js/game.js"></script>
 </body>
 </html>
