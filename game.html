@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Artist - Game</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Guess the Artist</h1>
+        </header>
+
+        <!-- Game View -->
+        <section class="game-view" id="game-view">
+            <!-- Ready Phase -->
+            <div class="game-phase hidden" id="phase-ready">
+                <div class="game-card">
+                    <h2>Ready to start?</h2>
+                    <div class="player-announcement">
+                        <p class="player-name" id="ready-player-name"></p>
+                        <p class="player-team" id="ready-team-name"></p>
+                    </div>
+                    <div class="round-info">
+                        <p>You have <strong id="ready-duration">30</strong> seconds</p>
+                    </div>
+                    <button id="go-button" class="btn-primary btn-large">GO!</button>
+                </div>
+            </div>
+
+            <!-- Playing Phase -->
+            <div class="game-phase hidden" id="phase-playing">
+                <div class="game-card">
+                    <div class="timer-section">
+                        <div class="timer" id="timer">30</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="artist-display">
+                        <div class="artist-image-container">
+                            <img id="artist-image" class="artist-image-large" src="" alt="Artist">
+                        </div>
+                        <div class="artist-name-large" id="artist-name">Artist Name</div>
+                    </div>
+
+                    <div class="game-controls">
+                        <button id="pass-button" class="btn-secondary btn-large">Pass</button>
+                        <button id="correct-button" class="btn-primary btn-large">Correct!</button>
+                    </div>
+
+                    <div class="game-stats">
+                        <span>Correct: <strong id="current-correct">0</strong></span>
+                        <span>Passed: <strong id="current-passed">0</strong></span>
+                        <span>Streak: <strong id="current-streak">0</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Round Done Phase (next player in same team) -->
+            <div class="game-phase hidden" id="phase-round-done">
+                <div class="game-card">
+                    <h2>Round Complete!</h2>
+                    <div class="round-summary">
+                        <p class="summary-stat">Correct answers: <strong id="summary-correct">0</strong></p>
+                        <p class="summary-stat">Passed: <strong id="summary-passed">0</strong></p>
+                        <p class="summary-stat">Best streak: <strong id="summary-streak">0</strong></p>
+                    </div>
+                    <div class="player-announcement">
+                        <p>Next up:</p>
+                        <p class="player-name" id="next-player-name"></p>
+                    </div>
+                    <button id="continue-button" class="btn-primary btn-large">Continue</button>
+                </div>
+            </div>
+
+            <!-- Team Done Phase (next team) -->
+            <div class="game-phase hidden" id="phase-team-done">
+                <div class="game-card">
+                    <h2>Team Complete!</h2>
+                    <div class="team-summary">
+                        <p class="team-name-large" id="completed-team-name"></p>
+                        <p class="summary-stat">Total score: <strong id="team-total-score">0</strong></p>
+                    </div>
+                    <div class="player-announcement">
+                        <p>Next team:</p>
+                        <p class="player-name" id="next-team-player"></p>
+                        <p class="player-team" id="next-team-name"></p>
+                    </div>
+                    <button id="next-team-button" class="btn-primary btn-large">Continue</button>
+                </div>
+            </div>
+
+            <!-- Game Over Phase (final scores) -->
+            <div class="game-phase hidden" id="phase-game-over">
+                <div class="game-card">
+                    <h2>Game Over!</h2>
+
+                    <div class="final-scores">
+                        <h3>Final Scores</h3>
+                        <div id="scores-list"></div>
+                    </div>
+
+                    <div class="highlights">
+                        <h3>Highlights</h3>
+
+                        <div class="highlight-item">
+                            <h4>Fastest Guess</h4>
+                            <div id="fastest-guess"></div>
+                        </div>
+
+                        <div class="highlight-item">
+                            <h4>Best Streak</h4>
+                            <div id="best-streak"></div>
+                        </div>
+                    </div>
+
+                    <button id="new-game-button" class="btn-primary btn-large" onclick="window.location.href='index.html'">
+                        New Game
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Messages -->
+        <section class="status">
+            <div id="status-message" class="hidden"></div>
+        </section>
+    </div>
+
+    <!-- Load scripts in order -->
+    <script src="src/js/config.js"></script>
+    <script src="src/js/spotify-client.js"></script>
+    <script src="src/js/game.js"></script>
+</body>
+</html>

@@ -526,4 +526,122 @@ class SpotifyClient {
 
         return Array.from(artistsMap.values());
     }
+
+    /**
+     * Get related artists based on user's top artists
+     */
+    async getRelatedArtists(limit = 50) {
+        await this.ensureAuthenticated();
+
+        try {
+            // Get user's top artists first
+            const topArtists = await this.getTopArtists(5);
+            const artistsMap = new Map();
+
+            // For each top artist, get related artists
+            for (const artist of topArtists) {
+                const url = `${this.config.apiBaseUrl}/artists/${artist.id}/related-artists`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    console.warn('Failed to get related artists for', artist.name);
+                    continue;
+                }
+
+                const data = await response.json();
+
+                data.artists.forEach(relatedArtist => {
+                    if (!artistsMap.has(relatedArtist.id) && artistsMap.size < limit) {
+                        artistsMap.set(relatedArtist.id, {
+                            id: relatedArtist.id,
+                            name: relatedArtist.name,
+                            image: relatedArtist.images[0]?.url || null,
+                            popularity: relatedArtist.popularity,
+                            genres: relatedArtist.genres,
+                        });
+                    }
+                });
+
+                if (artistsMap.size >= limit) break;
+            }
+
+            return Array.from(artistsMap.values());
+        } catch (error) {
+            console.error('Error getting related artists:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get artists from a decade using year search
+     */
+    async getArtistsByDecade(decade, limit = 50) {
+        await this.ensureAuthenticated();
+
+        try {
+            // Map decade to year range
+            const yearRanges = {
+                '1960s': '1960-1969',
+                '1970s': '1970-1979',
+                '1980s': '1980-1989',
+                '1990s': '1990-1999',
+                '2000s': '2000-2009',
+                '2010s': '2010-2019',
+                '2020s': '2020-2029'
+            };
+
+            const yearRange = yearRanges[decade];
+            if (!yearRange) {
+                throw new Error(`Unknown decade: ${decade}`);
+            }
+
+            // Search for popular artists from that era
+            const url = `${this.config.apiBaseUrl}/search?q=year:${yearRange}&type=artist&limit=${limit}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to search decade: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            return data.artists.items
+                .filter(artist => artist.images.length > 0)
+                .map(artist => ({
+                    id: artist.id,
+                    name: artist.name,
+                    image: artist.images[0]?.url || null,
+                    popularity: artist.popularity,
+                    genres: artist.genres,
+                }))
+                .sort((a, b) => b.popularity - a.popularity); // Sort by popularity
+        } catch (error) {
+            console.error('Error getting artists by decade:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Known Spotify Top 50 playlist IDs by country
+     */
+    getTop50PlaylistId(country) {
+        const playlistIds = {
+            'global': '37i9dQZEVXbMDoHDwVN2tF',  // Global Top 50
+            'usa': '37i9dQZEVXbLRQDuF5jeBp',     // USA Top 50
+            'uk': '37i9dQZEVXbLnolsZ8PSNw',      // UK Top 50
+            'sweden': '37i9dQZEVXbLoATJ81JYXz',  // Sweden Top 50
+            'japan': '37i9dQZEVXbKXQ4mDTEBXq',   // Japan Top 50
+            'brazil': '37i9dQZEVXbMXbN3EUUhlg'   // Brazil Top 50
+        };
+
+        return playlistIds[country] || null;
+    }
 }

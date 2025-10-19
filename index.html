@@ -55,63 +55,76 @@
                     </div>
                 </div>
 
-                <!-- Game Settings -->
+                <!-- Game Settings Tabs -->
                 <div class="game-settings">
                     <h3>Game Settings</h3>
 
-                    <div class="input-group">
-                        <label for="round-duration">Round Duration (seconds):</label>
-                        <input type="number" id="round-duration" value="60" min="30" max="180" step="15">
+                    <!-- Tab Navigation -->
+                    <div class="tab-nav">
+                        <button class="tab-button active" data-tab="sources" onclick="switchTab('sources')">
+                            Artist Sources
+                        </button>
+                        <button class="tab-button" data-tab="settings" onclick="switchTab('settings')">
+                            Game Settings
+                        </button>
                     </div>
 
-                    <div class="input-group">
-                        <label for="artist-source">Artist Source:</label>
-                        <select id="artist-source">
-                            <option value="top_artists">My Top Artists</option>
-                            <option value="playlists">From My Playlists</option>
-                            <option value="genres">Popular by Genre</option>
-                        </select>
-                    </div>
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Tab 1: Artist Sources -->
+                        <div class="tab-pane active" id="tab-sources">
+                            <div class="input-group">
+                                <label>Select Artist Sources:</label>
 
-                    <div class="input-group" id="time-range-group">
-                        <label for="time-range">Time Range:</label>
-                        <select id="time-range">
-                            <option value="short_term">Last 4 Weeks</option>
-                            <option value="medium_term" selected>Last 6 Months</option>
-                            <option value="long_term">All Time</option>
-                        </select>
-                    </div>
+                                <!-- Search/Filter -->
+                                <input
+                                    type="text"
+                                    id="playlist-filter"
+                                    class="playlist-filter"
+                                    placeholder="Search sources..."
+                                />
 
-                    <div class="input-group hidden" id="playlist-selector-group">
-                        <label>Select Playlists:</label>
+                                <!-- Available Sources (magic entries + playlists) -->
+                                <div id="playlists-loading" class="loading-message">Loading sources...</div>
+                                <div id="playlists-list" class="playlists-list hidden">
+                                    <!-- Magic entries and playlists will be dynamically added here -->
+                                </div>
+                                <div id="playlists-empty" class="empty-state hidden">No sources found</div>
 
-                        <!-- Search/Filter -->
-                        <input
-                            type="text"
-                            id="playlist-filter"
-                            class="playlist-filter hidden"
-                            placeholder="Search playlists..."
-                        />
-
-                        <!-- Available Playlists -->
-                        <div id="playlists-loading" class="loading-message">Loading playlists...</div>
-                        <div id="playlists-list" class="playlists-list hidden">
-                            <!-- Available playlists will be dynamically added here -->
-                        </div>
-                        <div id="playlists-empty" class="empty-state hidden">No playlists found</div>
-
-                        <!-- Selected Playlists -->
-                        <div id="selected-playlists-section" class="hidden">
-                            <label class="selected-label">Selected Playlists:</label>
-                            <div id="selected-playlists-list" class="selected-playlists-list">
-                                <!-- Selected playlists will be dynamically added here -->
+                                <!-- Selected Sources -->
+                                <div id="selected-playlists-section" class="hidden">
+                                    <label class="selected-label">Selected Sources:</label>
+                                    <div id="selected-playlists-list" class="selected-playlists-list">
+                                        <!-- Selected sources will be dynamically added here -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="input-group">
-                        <label for="artist-count">Number of Artists:</label>
-                        <input type="number" id="artist-count" value="20" min="5" max="50">
+                        <!-- Tab 2: Game Settings -->
+                        <div class="tab-pane" id="tab-settings">
+                            <div class="input-group">
+                                <label for="round-duration">Round Duration (seconds):</label>
+                                <input type="number" id="round-duration" value="60" min="30" max="180" step="15">
+                            </div>
+
+                            <div class="input-group">
+                                <label for="artist-count">Number of Artists:</label>
+                                <input type="number" id="artist-count" value="20" min="5" max="50">
+                            </div>
+
+                            <div class="input-group">
+                                <label for="time-range">Top Artists Time Range:</label>
+                                <select id="time-range">
+                                    <option value="short_term">Last 4 Weeks</option>
+                                    <option value="medium_term" selected>Last 6 Months</option>
+                                    <option value="long_term">All Time</option>
+                                </select>
+                                <p style="font-size: 0.9rem; color: #b3b3b3; margin-top: 5px;">
+                                    Only used if "My Top Artists" is selected
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

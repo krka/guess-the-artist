@@ -481,6 +481,69 @@ select:focus {
     margin-bottom: 25px;
 }
 
+/* Tabs */
+.tab-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #404040;
+}
+
+.tab-button {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    padding: 12px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.3s ease;
+}
+
+.tab-button:hover {
+    color: var(--text-color);
+}
+
+.tab-button.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-content {
+    padding-top: 10px;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Magic Source Items */
+.playlist-item.magic-source {
+    background-color: rgba(29, 185, 84, 0.1);
+    border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.playlist-item.magic-source:hover {
+    background-color: rgba(29, 185, 84, 0.15);
+}
+
+.selected-playlist-item.magic-source {
+    background-color: rgba(29, 185, 84, 0.15);
+    border: 1px solid rgba(29, 185, 84, 0.4);
+}
+
+/* Source Separator */
+.source-separator {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #404040, transparent);
+    margin: 15px 0;
+}
+
 /* Playlist Selector */
 .playlist-filter {
     width: 100%;
@@ -629,6 +692,256 @@ select:focus {
     cursor: not-allowed;
 }
 
+/* Game View */
+.game-view {
+    margin-bottom: 30px;
+}
+
+.game-phase {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-card {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+}
+
+/* Timer Section */
+.timer-section {
+    margin-bottom: 30px;
+}
+
+.timer {
+    font-size: 4rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #404040;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    transition: width 1s linear;
+}
+
+/* Artist Display */
+.artist-display {
+    margin-bottom: 30px;
+}
+
+.artist-image-container {
+    margin-bottom: 20px;
+}
+
+.artist-image-large {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.artist-name-large {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-top: 20px;
+}
+
+/* Game Controls */
+.game-controls {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.game-controls .btn-large {
+    flex: 1;
+}
+
+/* Game Stats */
+.game-stats {
+    display: flex;
+    justify-content: space-around;
+    padding: 20px;
+    background-color: var(--secondary-color);
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+}
+
+/* Player Announcement */
+.player-announcement {
+    margin: 30px 0;
+}
+
+.player-name {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.player-team {
+    font-size: 1.5rem;
+    color: #b3b3b3;
+}
+
+.round-info {
+    font-size: 1.2rem;
+    color: #b3b3b3;
+    margin-bottom: 30px;
+}
+
+/* Round Summary */
+.round-summary {
+    background-color: var(--secondary-color);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    margin-bottom: 30px;
+}
+
+.summary-stat {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+    color: var(--text-color);
+}
+
+.summary-stat strong {
+    color: var(--primary-color);
+}
+
+/* Team Summary */
+.team-summary {
+    margin-bottom: 30px;
+}
+
+.team-name-large {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+/* Final Scores */
+.final-scores {
+    margin-bottom: 40px;
+}
+
+.final-scores h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--secondary-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.score-item.winner {
+    background: linear-gradient(135deg, rgba(29, 185, 84, 0.2) 0%, var(--secondary-color) 100%);
+    border: 2px solid var(--primary-color);
+}
+
+.score-item .rank {
+    font-weight: bold;
+    margin-right: 15px;
+    color: #b3b3b3;
+}
+
+.score-item.winner .rank {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.score-item .team-name {
+    flex: 1;
+    text-align: left;
+}
+
+.score-item .score {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+/* Highlights */
+.highlights {
+    margin-bottom: 40px;
+}
+
+.highlights h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+}
+
+.highlight-item {
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+}
+
+.highlight-item h4 {
+    color: #b3b3b3;
+    margin-bottom: 15px;
+}
+
+.highlight-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.highlight-artist-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+}
+
+.highlight-text {
+    flex: 1;
+    text-align: left;
+}
+
+.highlight-text p {
+    margin-bottom: 5px;
+}
+
+.highlight-text .time {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.highlight-text .streak-number {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: 2rem;
@@ -639,7 +952,7 @@ select:focus {
         gap: 15px;
     }
 
-    .controls, .auth-card, .setup-card {
+    .controls, .auth-card, .setup-card, .game-card {
         padding: 20px;
     }
 
@@ -653,5 +966,26 @@ select:focus {
         flex-direction: column;
         align-items: stretch;
         gap: 10px;
+    }
+
+    .timer {
+        font-size: 3rem;
+    }
+
+    .artist-image-large {
+        width: 200px;
+        height: 200px;
+    }
+
+    .artist-name-large {
+        font-size: 1.5rem;
+    }
+
+    .player-name {
+        font-size: 2rem;
+    }
+
+    .game-controls {
+        flex-direction: column;
     }
 }
