@@ -109,16 +109,24 @@ function handleLogout() {
  * Initialize UI for authenticated user
  */
 async function initializeAuthenticatedUI() {
+    console.log('initializeAuthenticatedUI called');
+
+    // Show game UI immediately
+    authSection.classList.add('hidden');
+    gameSetupSection.classList.remove('hidden');
+    console.log('UI sections toggled');
+
+    // Fetch user profile in background
     try {
+        console.log('Fetching user profile...');
         const user = await spotifyClient.getCurrentUser();
+        console.log('User profile received:', user);
         userName.textContent = `Logged in as ${user.display_name || user.id}`;
-
-        authSection.classList.add('hidden');
-        gameSetupSection.classList.remove('hidden');
-
         showStatus('Ready to set up your game!', 'success');
     } catch (error) {
-        throw new Error(`Failed to load user profile: ${error.message}`);
+        console.error('Failed to fetch user profile:', error);
+        userName.textContent = 'Logged in';
+        showStatus('Ready to set up your game!', 'success');
     }
 }
 
