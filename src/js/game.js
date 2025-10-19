@@ -163,20 +163,28 @@ async function fetchArtists() {
             console.log(`Popularity filter: ${beforeFilter} → ${allArtists.length} artists (min popularity: ${minPopularity})`);
         }
 
-        // Calculate max artists needed (total game seconds)
-        const totalGameSeconds = gameConfig.minArtistsNeeded ||
+        // Calculate artists needed (total game seconds)
+        const artistsNeeded = gameConfig.minArtistsNeeded ||
             (gameConfig.totalTimePerTeam * gameConfig.teams.length);
 
-        console.log(`Game duration: ${totalGameSeconds}s (max artists needed), available: ${allArtists.length}`);
+        console.log(`Game duration: ${artistsNeeded}s (artists needed), available: ${allArtists.length}`);
 
-        // If we have more artists than needed, keep the most popular ones
-        if (allArtists.length > totalGameSeconds) {
+        // Improved artist selection to avoid repetition across games
+        if (allArtists.length > artistsNeeded) {
+            // Sort by popularity
             allArtists.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-            allArtists = allArtists.slice(0, totalGameSeconds);
-            console.log(`Limited to top ${allArtists.length} most popular artists (based on game duration)`);
+
+            // Calculate how many artists to keep
+            const remaining = allArtists.length - artistsNeeded;
+            const bottomTwentyPercent = Math.floor(remaining * 0.2);
+            const artistsToKeep = allArtists.length - bottomTwentyPercent;
+
+            // Remove the bottom 20% of excess artists (keeps top 80% + all needed)
+            allArtists = allArtists.slice(0, artistsToKeep);
+            console.log(`Artist pool: kept ${artistsToKeep} artists (removed bottom ${bottomTwentyPercent} least popular from ${allArtists.length + bottomTwentyPercent} total)`);
         }
 
-        // Shuffle - use all available artists
+        // Shuffle ALL remaining artists - this provides variety across games
         shuffleArray(allArtists);
         gameState.artists = allArtists;
 
@@ -188,7 +196,7 @@ async function fetchArtists() {
             const debugInfo = {
                 artistsFound: gameState.artists.length,
                 minNeeded: minNeeded,
-                totalGameSeconds: totalGameSeconds,
+                artistsNeeded: artistsNeeded,
                 minPopularity: gameConfig.minPopularity,
                 playlistIds: gameConfig.playlistIds,
                 teams: gameConfig.teams.length,
