@@ -14,6 +14,23 @@
 
         <!-- Game View -->
         <section class="game-view" id="game-view">
+            <!-- Error Phase -->
+            <div class="game-phase hidden" id="phase-error">
+                <div class="game-card">
+                    <h2 style="color: var(--error-color);">Error Loading Game</h2>
+                    <div class="error-details">
+                        <p id="error-message" style="white-space: pre-wrap; margin: 20px 0;"></p>
+                        <div id="error-debug" style="background-color: var(--secondary-color); padding: 15px; border-radius: var(--border-radius); margin: 20px 0; text-align: left;">
+                            <p style="font-weight: bold; margin-bottom: 10px;">Debug Information:</p>
+                            <pre id="error-debug-content" style="font-size: 0.85rem; color: #b3b3b3; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;"></pre>
+                        </div>
+                    </div>
+                    <button id="error-back-button" class="btn-primary btn-large" onclick="window.location.href='index.html'">
+                        Back to Setup
+                    </button>
+                </div>
+            </div>
+
             <!-- Ready Phase -->
             <div class="game-phase hidden" id="phase-ready">
                 <div class="game-card">
@@ -44,6 +61,7 @@
                             <img id="artist-image" class="artist-image-large" src="" alt="Artist">
                         </div>
                         <div class="artist-name-large" id="artist-name">Artist Name</div>
+                        <div class="artist-popularity" id="artist-popularity">Popularity: --</div>
                     </div>
 
                     <div class="game-controls">

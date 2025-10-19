@@ -230,9 +230,10 @@ function addTeam() {
         return;
     }
 
-    // Parse players from comma-separated input
+    // Parse players - use comma if present, otherwise space
+    const separator = playersText.includes(',') ? ',' : ' ';
     const members = playersText
-        .split(',')
+        .split(separator)
         .map(m => m.trim())
         .filter(m => m.length > 0);
 
@@ -356,6 +357,7 @@ function updateStartButtonState() {
 async function loadPlaylists() {
     if (userPlaylists.length > 0) {
         // Already loaded, just render
+        renderMagicSources();
         renderPlaylists();
         renderSelectedPlaylists();
         return;
@@ -369,6 +371,7 @@ async function loadPlaylists() {
         userPlaylists = await spotifyClient.getUserPlaylists();
 
         // Always render - magic sources are always available
+        renderMagicSources();
         renderPlaylists();
         renderSelectedPlaylists();
         playlistsLoading.classList.add('hidden');
@@ -390,6 +393,7 @@ async function loadPlaylists() {
         playlistsLoading.classList.add('hidden');
 
         // Still show magic sources even if playlists fail
+        renderMagicSources();
         renderPlaylists();
         playlistsList.classList.remove('hidden');
     }
@@ -399,40 +403,51 @@ async function loadPlaylists() {
  * Filter playlists based on search query
  */
 function filterPlaylists(query) {
+    // Note: Only filters playlists, not magic sources
+    // Magic sources are in a separate tab
     renderPlaylists(query);
 }
 
 /**
- * Render available sources (magic entries + playlists not selected)
+ * Render available magic sources (not selected)
  */
-function renderPlaylists(filterQuery = '') {
+function renderMagicSources(filterQuery = '') {
     const query = filterQuery.toLowerCase();
+    const magicSourcesList = document.getElementById('magic-sources-list');
 
-    let html = '';
-
-    // Add magic sources (always at top)
     const availableMagicSources = MAGIC_SOURCES.filter(source => {
         const matchesFilter = source.name.toLowerCase().includes(query);
         const notSelected = !selectedPlaylistIds.includes(source.id);
         return matchesFilter && notSelected;
     });
 
-    availableMagicSources.forEach(source => {
-        html += `
-            <div class="playlist-item magic-source">
-                <div class="playlist-item-content">
-                    <span class="playlist-name">${source.name}</span>
-                    <span class="playlist-info">${source.info}</span>
-                </div>
-                <button
-                    class="btn-add-playlist"
-                    onclick="addPlaylist('${source.id}')"
-                >Add</button>
-            </div>
-        `;
-    });
+    if (availableMagicSources.length === 0) {
+        magicSourcesList.innerHTML = '<div class="empty-state">No magic sources found</div>';
+        return;
+    }
 
-    // Add separator if we have both magic sources and playlists
+    const html = availableMagicSources.map(source => `
+        <div class="playlist-item magic-source">
+            <div class="playlist-item-content">
+                <span class="playlist-name">${source.name}</span>
+                <span class="playlist-info">${source.info}</span>
+            </div>
+            <button
+                class="btn-add-playlist"
+                onclick="addPlaylist('${source.id}')"
+            >Add</button>
+        </div>
+    `).join('');
+
+    magicSourcesList.innerHTML = html;
+}
+
+/**
+ * Render available playlists (not selected)
+ */
+function renderPlaylists(filterQuery = '') {
+    const query = filterQuery.toLowerCase();
+
     const availablePlaylists = userPlaylists
         .filter(playlist => {
             const matchesFilter = playlist.name.toLowerCase().includes(query);
@@ -441,31 +456,25 @@ function renderPlaylists(filterQuery = '') {
         })
         .sort((a, b) => b.trackCount - a.trackCount); // Sort by track count descending (biggest first)
 
-    if (availableMagicSources.length > 0 && availablePlaylists.length > 0) {
-        html += '<div class="source-separator"></div>';
+    if (availablePlaylists.length === 0) {
+        playlistsList.innerHTML = '<div class="empty-state">No playlists found</div>';
+        return;
     }
 
-    // Add regular playlists
-    availablePlaylists.forEach(playlist => {
-        html += `
-            <div class="playlist-item">
-                <div class="playlist-item-content">
-                    <span class="playlist-name">${playlist.name}</span>
-                    <span class="playlist-info">${playlist.trackCount} tracks</span>
-                </div>
-                <button
-                    class="btn-add-playlist"
-                    onclick="addPlaylist('${playlist.id}')"
-                >Add</button>
+    const html = availablePlaylists.map(playlist => `
+        <div class="playlist-item">
+            <div class="playlist-item-content">
+                <span class="playlist-name">${playlist.name}</span>
+                <span class="playlist-info">${playlist.trackCount} tracks</span>
             </div>
-        `;
-    });
+            <button
+                class="btn-add-playlist"
+                onclick="addPlaylist('${playlist.id}')"
+            >Add</button>
+        </div>
+    `).join('');
 
-    if (html === '') {
-        playlistsList.innerHTML = '<div class="empty-state">No sources found</div>';
-    } else {
-        playlistsList.innerHTML = html;
-    }
+    playlistsList.innerHTML = html;
 }
 
 /**
@@ -526,13 +535,16 @@ function addPlaylist(playlistId) {
     if (!selectedPlaylistIds.includes(playlistId)) {
         selectedPlaylistIds.push(playlistId);
 
-        const currentFilter = playlistFilter.value;
+        const currentFilter = playlistFilter ? playlistFilter.value : '';
+        renderMagicSources(currentFilter);
         renderPlaylists(currentFilter);
         renderSelectedPlaylists();
 
         // If filter resulted in empty view, clear it
         if (currentFilter && playlistsList.querySelector('.empty-state')) {
-            playlistFilter.value = '';
+            if (playlistFilter) {
+                playlistFilter.value = '';
+            }
             renderPlaylists('');
         }
 
@@ -548,7 +560,9 @@ function removePlaylist(playlistId) {
     const index = selectedPlaylistIds.indexOf(playlistId);
     if (index !== -1) {
         selectedPlaylistIds.splice(index, 1);
-        renderPlaylists(playlistFilter.value);
+        const currentFilter = playlistFilter ? playlistFilter.value : '';
+        renderMagicSources(currentFilter);
+        renderPlaylists(currentFilter);
         renderSelectedPlaylists();
         saveState();
         console.log('Removed playlist:', playlistId);
@@ -558,11 +572,35 @@ function removePlaylist(playlistId) {
 /**
  * Start the game
  */
-function startGame() {
+async function startGame() {
     const roundDuration = parseInt(document.getElementById('round-duration').value);
-    const artistCount = parseInt(document.getElementById('artist-count').value);
     const timeRange = document.getElementById('time-range').value;
     const minPopularity = parseInt(document.getElementById('min-popularity').value);
+
+    // Validate authentication BEFORE navigating
+    try {
+        showStatus('Checking session...', 'info');
+        await spotifyClient.ensureAuthenticated();
+    } catch (error) {
+        console.error('Authentication check failed:', error);
+        console.error('Error details:', {
+            message: error.message,
+            hasRefreshToken: !!localStorage.getItem('spotify_refresh_token'),
+            hasAccessToken: !!spotifyClient.accessToken,
+            tokenExpiry: spotifyClient.tokenExpiry ? new Date(spotifyClient.tokenExpiry).toISOString() : 'none'
+        });
+
+        // Show user-friendly error message
+        let userMessage = error.message;
+        if (error.message.includes('server_error') || error.message.includes('Failed to remove token')) {
+            userMessage = 'Spotify is having temporary issues. Please try again in a moment.';
+        } else if (error.message.includes('Session expired') || error.message.includes('No refresh token')) {
+            userMessage = 'Your session has expired. Please log out and log back in.';
+        }
+
+        showStatus(userMessage, 'error');
+        return;
+    }
 
     // Validate at least one source is selected
     if (selectedPlaylistIds.length === 0) {
@@ -587,14 +625,19 @@ function startGame() {
         }
     });
 
+    // Calculate minimum artists needed for the entire game
+    const totalGameSeconds = teams.reduce((total, team) => {
+        return total + roundDuration * team.members.length;
+    }, 0);
+
     const gameConfig = {
         teams: teams,
         roundDuration: roundDuration,
         artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
-        artistCount: artistCount,
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs
         timeRange: timeRange,  // For top artists
-        minPopularity: minPopularity  // Filter out obscure artists
+        minPopularity: minPopularity,  // Filter out obscure artists
+        minArtistsNeeded: totalGameSeconds  // Minimum to avoid running out
     };
 
     // Save to localStorage for the game page
@@ -643,6 +686,29 @@ function switchTab(tabName) {
     });
 }
 
+/**
+ * Switch between inner tabs (Magic Sources vs Your Playlists)
+ */
+function switchInnerTab(tabName) {
+    // Update inner tab buttons
+    document.querySelectorAll('.inner-tab-button').forEach(button => {
+        if (button.getAttribute('data-inner-tab') === tabName) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
+
+    // Update inner tab panes
+    document.querySelectorAll('.inner-tab-pane').forEach(pane => {
+        if (pane.id === `inner-tab-${tabName}`) {
+            pane.classList.add('active');
+        } else {
+            pane.classList.remove('active');
+        }
+    });
+}
+
 // Make functions available globally for onclick handlers
 window.removeTeam = removeTeam;
 window.updateTeamMembers = updateTeamMembers;
@@ -650,3 +716,4 @@ window.updateTeamName = updateTeamName;
 window.addPlaylist = addPlaylist;
 window.removePlaylist = removePlaylist;
 window.switchTab = switchTab;
+window.switchInnerTab = switchInnerTab;

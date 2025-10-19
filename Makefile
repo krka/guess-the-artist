@@ -46,7 +46,10 @@ deploy:
 	fi
 	@echo "Deploying to GitHub Pages..."
 	@echo ""
-	@echo "Copying files to gh-pages worktree..."
+	@echo "Step 1: Creating versioned assets..."
+	@./deploy.sh
+	@echo ""
+	@echo "Step 2: Copying files to gh-pages worktree..."
 	@rsync -av --delete \
 		--exclude='.git' \
 		--exclude='gh-pages' \
@@ -55,11 +58,18 @@ deploy:
 		--exclude='Makefile' \
 		--exclude='PLAN.md' \
 		--exclude='DEPLOY.md' \
+		--exclude='deploy.sh' \
+		--exclude='dev.sh' \
 		. gh-pages/
+	@echo ""
+	@echo "Step 3: Committing to gh-pages..."
 	@cd gh-pages && \
 		git add -A && \
-		(git diff --cached --quiet || git commit -m "Deploy: $$(date '+%Y-%m-%d %H:%M:%S')") && \
+		(git diff --cached --quiet || git commit -m "Deploy: $$(git rev-parse --short HEAD) - $$(date '+%Y-%m-%d %H:%M:%S')") && \
 		git push origin gh-pages
+	@echo ""
+	@echo "Step 4: Reverting to development mode..."
+	@./dev.sh
 	@echo ""
 	@echo "✓ Deployed! Your changes will be live at:"
 	@echo "  https://krka.github.io/guess-the-artist/"

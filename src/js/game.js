@@ -22,6 +22,7 @@ let gameState = {
 const statusMessage = document.getElementById('status-message');
 
 // Phase elements
+const phaseError = document.getElementById('phase-error');
 const phaseReady = document.getElementById('phase-ready');
 const phasePlaying = document.getElementById('phase-playing');
 const phaseRoundDone = document.getElementById('phase-round-done');
@@ -82,16 +83,35 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
+ * Get friendly name for a source
+ */
+function getSourceName(source) {
+    if (source === '__top_artists__') return 'My Top Artists';
+    if (source === '__related_artists__') return 'Related Artists';
+    if (source === '__playlists__') return 'Your Playlists';
+    if (source.startsWith('__decade_')) {
+        const decade = source.replace('__decade_', '').replace('__', '');
+        return `Best of ${decade}`;
+    }
+    return source;
+}
+
+/**
  * Fetch artists based on game config
  */
 async function fetchArtists() {
-    showStatus('Loading artists...', 'info');
+    const totalSources = gameConfig.artistSources.length;
+    let currentSource = 0;
 
     try {
         const artistsMap = new Map();
 
         // Fetch from each selected source
         for (const source of gameConfig.artistSources) {
+            currentSource++;
+            const sourceName = getSourceName(source);
+            showStatus(`Loading artists... (${currentSource}/${totalSources}: ${sourceName})`, 'info');
+
             if (source === '__top_artists__') {
                 const timeRange = gameConfig.timeRange || 'medium_term';
                 const artists = await spotifyClient.getTopArtists(50, timeRange);
@@ -104,14 +124,18 @@ async function fetchArtists() {
                 const artists = await spotifyClient.getArtistsByDecade(decade, 50);
                 artists.forEach(artist => artistsMap.set(artist.id, artist));
             } else if (source === '__playlists__') {
+                console.log('Fetching artists from playlists...', gameConfig.playlistIds);
                 const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds);
+                console.log(`Got ${artists.length} artists from playlists`);
                 artists.forEach(artist => artistsMap.set(artist.id, artist));
             }
         }
 
         // Convert to array
         let allArtists = Array.from(artistsMap.values());
-        console.log(`Fetched ${allArtists.length} total artists`);
+        console.log(`Fetched ${allArtists.length} unique artists from all sources`);
+
+        showStatus('Processing artists...', 'info');
 
         // Filter by minimum popularity if set
         const minPopularity = gameConfig.minPopularity || 0;
@@ -121,7 +145,7 @@ async function fetchArtists() {
                 const popularity = artist.popularity || 0;
                 return popularity >= minPopularity;
             });
-            console.log(`Filtered from ${beforeFilter} to ${allArtists.length} artists (min popularity: ${minPopularity})`);
+            console.log(`Popularity filter: ${beforeFilter} → ${allArtists.length} artists (min popularity: ${minPopularity})`);
         }
 
         // Calculate max artists needed (total game seconds)
@@ -129,20 +153,43 @@ async function fetchArtists() {
             return total + gameConfig.roundDuration * team.members.length;
         }, 0);
 
-        console.log(`Total game duration: ${totalGameSeconds}s, artists available: ${allArtists.length}`);
+        console.log(`Game duration: ${totalGameSeconds}s (max artists needed), available: ${allArtists.length}`);
 
         // If we have more artists than needed, keep the most popular ones
         if (allArtists.length > totalGameSeconds) {
             allArtists.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
             allArtists = allArtists.slice(0, totalGameSeconds);
-            console.log(`Kept top ${allArtists.length} most popular artists`);
+            console.log(`Limited to top ${allArtists.length} most popular artists (based on game duration)`);
         }
 
-        // Shuffle and limit to requested count
+        // Shuffle - use all available artists
         shuffleArray(allArtists);
-        gameState.artists = allArtists.slice(0, Math.min(gameConfig.artistCount, allArtists.length));
+        gameState.artists = allArtists;
 
-        console.log(`Loaded ${gameState.artists.length} artists for game`);
+        console.log(`Final artist pool: ${gameState.artists.length} artists (shuffled and ready)`);
+
+        // Check if we have enough artists for the game
+        const minNeeded = gameConfig.minArtistsNeeded || 20;
+        if (gameState.artists.length < minNeeded) {
+            const debugInfo = {
+                artistsFound: gameState.artists.length,
+                minNeeded: minNeeded,
+                totalGameSeconds: totalGameSeconds,
+                minPopularity: gameConfig.minPopularity,
+                sources: gameConfig.artistSources,
+                playlistIds: gameConfig.playlistIds,
+                teams: gameConfig.teams.length,
+                roundDuration: gameConfig.roundDuration
+            };
+            console.error('Not enough artists! Debug info:', debugInfo);
+
+            showErrorPhase(
+                `Not enough artists!\n\nFound: ${gameState.artists.length} artists\nNeeded: ${minNeeded} artists\n\nPossible fixes:\n• Add more artist sources (playlists, decades, etc.)\n• Lower the popularity filter (currently: ${gameConfig.minPopularity})\n• Reduce round duration (currently: ${gameConfig.roundDuration}s)\n• Use fewer teams (currently: ${gameConfig.teams.length} teams)`,
+                debugInfo
+            );
+            return;
+        }
+
         if (minPopularity > 0) {
             showStatus(`Artists loaded! (filtered by popularity ≥ ${minPopularity})`, 'success');
         } else {
@@ -220,14 +267,19 @@ function startRound() {
  */
 function showCurrentArtist() {
     if (gameState.currentArtistIndex >= gameState.artists.length) {
-        // No more artists
-        endRound();
-        return;
+        // Ran out of artists - reshuffle and reuse them
+        console.log('Ran out of artists, reshuffling...');
+        shuffleArray(gameState.artists);
+        gameState.currentArtistIndex = 0;
     }
 
     const artist = gameState.artists[gameState.currentArtistIndex];
     document.getElementById('artist-image').src = artist.image || 'https://via.placeholder.com/300?text=No+Image';
     document.getElementById('artist-name').textContent = artist.name;
+
+    // Show popularity (for debugging/tuning filter)
+    const popularity = artist.popularity || 0;
+    document.getElementById('artist-popularity').textContent = `Popularity: ${popularity}`;
 }
 
 /**
@@ -493,11 +545,23 @@ function showGameOver() {
  * Hide all phase elements
  */
 function hideAllPhases() {
+    phaseError.classList.add('hidden');
     phaseReady.classList.add('hidden');
     phasePlaying.classList.add('hidden');
     phaseRoundDone.classList.add('hidden');
     phaseTeamDone.classList.add('hidden');
     phaseGameOver.classList.add('hidden');
+}
+
+/**
+ * Show error phase with details
+ */
+function showErrorPhase(message, debugInfo) {
+    hideAllPhases();
+    phaseError.classList.remove('hidden');
+
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('error-debug-content').textContent = JSON.stringify(debugInfo, null, 2);
 }
 
 /**
