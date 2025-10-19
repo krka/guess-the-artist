@@ -708,18 +708,20 @@ function showGameOver() {
  * Create raining artists background animation
  */
 function createRainingArtists() {
-    // Collect all correct guesses from all players
-    const allCorrectArtists = [];
+    // Collect all unique correct guesses from all players
+    const artistsMap = new Map();
     Object.values(gameState.playerStats).forEach(stats => {
         stats.guesses.forEach(guess => {
             if (guess.wasCorrect && guess.artist.image) {
-                allCorrectArtists.push(guess.artist);
+                artistsMap.set(guess.artist.id, guess.artist);
             }
         });
     });
 
+    const uniqueArtists = Array.from(artistsMap.values());
+
     // If no correct answers, nothing to animate
-    if (allCorrectArtists.length === 0) return;
+    if (uniqueArtists.length === 0) return;
 
     // Create container for raining artists (fixed to viewport, behind content)
     let rainContainer = document.getElementById('rain-container');
@@ -733,12 +735,13 @@ function createRainingArtists() {
     // Clear any existing rain
     rainContainer.innerHTML = '';
 
-    // Show 8-12 falling artists at a time
-    const artistCount = Math.min(12, Math.max(8, allCorrectArtists.length));
+    // Shuffle and take up to 12 unique artists
+    shuffleArray(uniqueArtists);
+    const artistCount = Math.min(12, uniqueArtists.length);
 
     for (let i = 0; i < artistCount; i++) {
-        // Pick a random artist from correct answers
-        const artist = allCorrectArtists[Math.floor(Math.random() * allCorrectArtists.length)];
+        // Take the i-th unique artist (no duplicates)
+        const artist = uniqueArtists[i];
 
         const img = document.createElement('img');
         img.src = artist.image;
