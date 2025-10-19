@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guess the Artist</title>
-    <link rel="stylesheet" href="v/5e7d82b/src/css/styles.css">
+    <link rel="stylesheet" href="v/33fabbf/src/css/styles.css">
 </head>
 <body>
     <div class="container">
@@ -75,31 +75,27 @@
 
                                 <!-- Inner Tab Navigation -->
                                 <div class="inner-tab-nav">
-                                    <button class="inner-tab-button active" data-inner-tab="magic" onclick="switchInnerTab('magic')">
-                                        Magic Sources
-                                    </button>
-                                    <button class="inner-tab-button" data-inner-tab="playlists" onclick="switchInnerTab('playlists')">
+                                    <button class="inner-tab-button active" data-inner-tab="playlists" onclick="switchInnerTab('playlists')">
                                         Your Playlists
+                                    </button>
+                                    <button class="inner-tab-button" data-inner-tab="search" onclick="switchInnerTab('search')">
+                                        Search Playlists
+                                    </button>
+                                    <button class="inner-tab-button" data-inner-tab="previous" onclick="switchInnerTab('previous')">
+                                        Previously Used
                                     </button>
                                 </div>
 
                                 <!-- Inner Tab Content -->
                                 <div class="inner-tab-content">
-                                    <!-- Magic Sources -->
-                                    <div class="inner-tab-pane active" id="inner-tab-magic">
-                                        <div id="magic-sources-list" class="playlists-list">
-                                            <!-- Magic sources will be dynamically added here -->
-                                        </div>
-                                    </div>
-
-                                    <!-- Playlists -->
-                                    <div class="inner-tab-pane" id="inner-tab-playlists">
-                                        <!-- Search/Filter -->
+                                    <!-- Your Playlists -->
+                                    <div class="inner-tab-pane active" id="inner-tab-playlists">
+                                        <!-- Filter -->
                                         <input
                                             type="text"
                                             id="playlist-filter"
                                             class="playlist-filter"
-                                            placeholder="Search playlists..."
+                                            placeholder="Filter playlists..."
                                         />
 
                                         <!-- Available Playlists -->
@@ -108,6 +104,30 @@
                                             <!-- Playlists will be dynamically added here -->
                                         </div>
                                         <div id="playlists-empty" class="empty-state hidden">No playlists found</div>
+                                    </div>
+
+                                    <!-- Search Playlists -->
+                                    <div class="inner-tab-pane" id="inner-tab-search">
+                                        <div class="search-container">
+                                            <input
+                                                type="text"
+                                                id="playlist-search-input"
+                                                class="playlist-filter"
+                                                placeholder="Search for playlists..."
+                                            />
+                                            <button id="playlist-search-button" class="btn-secondary">Search</button>
+                                        </div>
+                                        <div id="search-results-loading" class="loading-message hidden">Searching...</div>
+                                        <div id="search-results-list" class="playlists-list">
+                                            <div class="empty-state">Enter a search term to find playlists</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Previously Used -->
+                                    <div class="inner-tab-pane" id="inner-tab-previous">
+                                        <div id="previous-playlists-list" class="playlists-list">
+                                            <!-- Previously used playlists will be dynamically added here -->
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -165,8 +185,8 @@
     </div>
 
     <!-- Load scripts in order -->
-    <script src="v/5e7d82b/src/js/config.js"></script>
-    <script src="v/5e7d82b/src/js/spotify-client.js"></script>
-    <script src="v/5e7d82b/src/js/game-setup.js"></script>
+    <script src="v/33fabbf/src/js/config.js"></script>
+    <script src="v/33fabbf/src/js/spotify-client.js"></script>
+    <script src="v/33fabbf/src/js/game-setup.js"></script>
 </body>
 </html>
