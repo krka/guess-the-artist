@@ -149,9 +149,8 @@ async function fetchArtists() {
         }
 
         // Calculate max artists needed (total game seconds)
-        const totalGameSeconds = gameConfig.teams.reduce((total, team) => {
-            return total + gameConfig.roundDuration * team.members.length;
-        }, 0);
+        const totalGameSeconds = gameConfig.minArtistsNeeded ||
+            (gameConfig.totalTimePerTeam * gameConfig.teams.length);
 
         console.log(`Game duration: ${totalGameSeconds}s (max artists needed), available: ${allArtists.length}`);
 
@@ -179,12 +178,14 @@ async function fetchArtists() {
                 sources: gameConfig.artistSources,
                 playlistIds: gameConfig.playlistIds,
                 teams: gameConfig.teams.length,
-                roundDuration: gameConfig.roundDuration
+                playerDuration: gameConfig.playerDuration,
+                maxTeamSize: gameConfig.maxTeamSize,
+                totalTimePerTeam: gameConfig.totalTimePerTeam
             };
             console.error('Not enough artists! Debug info:', debugInfo);
 
             showErrorPhase(
-                `Not enough artists!\n\nFound: ${gameState.artists.length} artists\nNeeded: ${minNeeded} artists\n\nPossible fixes:\n• Add more artist sources (playlists, decades, etc.)\n• Lower the popularity filter (currently: ${gameConfig.minPopularity})\n• Reduce round duration (currently: ${gameConfig.roundDuration}s)\n• Use fewer teams (currently: ${gameConfig.teams.length} teams)`,
+                `Not enough artists!\n\nFound: ${gameState.artists.length} artists\nNeeded: ${minNeeded} artists\n\nPossible fixes:\n• Add more artist sources (playlists, decades, etc.)\n• Lower the popularity filter (currently: ${gameConfig.minPopularity})\n• Reduce time per player (currently: ${gameConfig.playerDuration}s)\n• Use fewer teams (currently: ${gameConfig.teams.length} teams)`,
                 debugInfo
             );
             return;
@@ -220,7 +221,7 @@ function showReadyPhase() {
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
-    const playerDuration = Math.floor(gameConfig.roundDuration / team.members.length);
+    const playerDuration = Math.floor(gameConfig.totalTimePerTeam / team.members.length);
 
     document.getElementById('ready-player-name').textContent = player;
     document.getElementById('ready-team-name').textContent = team.name;
@@ -241,7 +242,7 @@ function startRound() {
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
-    const playerDuration = Math.floor(gameConfig.roundDuration / team.members.length);
+    const playerDuration = Math.floor(gameConfig.totalTimePerTeam / team.members.length);
 
     // Reset round state
     gameState.remainingTime = playerDuration;
@@ -307,7 +308,7 @@ function updateTimerDisplay() {
 
     // Update progress bar
     const team = gameConfig.teams[gameState.currentTeamIndex];
-    const playerDuration = Math.floor(gameConfig.roundDuration / team.members.length);
+    const playerDuration = Math.floor(gameConfig.totalTimePerTeam / team.members.length);
     const progress = (gameState.remainingTime / playerDuration) * 100;
     document.getElementById('progress-fill').style.width = `${progress}%`;
 

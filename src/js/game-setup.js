@@ -625,14 +625,18 @@ async function startGame() {
         }
     });
 
+    // Calculate fair time distribution
+    const maxTeamSize = Math.max(...teams.map(t => t.members.length));
+    const totalTimePerTeam = roundDuration * maxTeamSize;
+
     // Calculate minimum artists needed for the entire game
-    const totalGameSeconds = teams.reduce((total, team) => {
-        return total + roundDuration * team.members.length;
-    }, 0);
+    const totalGameSeconds = teams.length * totalTimePerTeam;
 
     const gameConfig = {
         teams: teams,
-        roundDuration: roundDuration,
+        playerDuration: roundDuration,  // Time per player in largest team
+        maxTeamSize: maxTeamSize,  // Largest team size
+        totalTimePerTeam: totalTimePerTeam,  // Total time each team gets
         artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs
         timeRange: timeRange,  // For top artists
