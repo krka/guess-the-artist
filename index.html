@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sista Minuten - Debug View</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sista Minuten - Artist Debug View</h1>
+            <p class="subtitle">Spotify API Integration Test</p>
+        </header>
+
+        <section class="controls">
+            <div class="input-group">
+                <label for="client-id">Spotify Client ID:</label>
+                <input type="text" id="client-id" placeholder="Enter your Client ID">
+            </div>
+            <div class="input-group">
+                <label for="client-secret">Spotify Client Secret:</label>
+                <input type="password" id="client-secret" placeholder="Enter your Client Secret">
+            </div>
+            <div class="input-group">
+                <label for="artist-count">Number of Artists:</label>
+                <input type="number" id="artist-count" value="20" min="1" max="50">
+            </div>
+            <button id="fetch-artists" class="btn-primary">Fetch Artists</button>
+        </section>
+
+        <section class="status">
+            <div id="status-message" class="hidden"></div>
+        </section>
+
+        <section class="artists-grid" id="artists-grid">
+            <!-- Artist cards will be dynamically inserted here -->
+        </section>
+    </div>
+
+    <script src="src/js/spotify-client.js"></script>
+    <script src="src/js/main.js"></script>
+</body>
+</html>
