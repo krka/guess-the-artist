@@ -680,19 +680,19 @@ select:focus {
     margin-top: 10px;
 }
 
-/* Magic Source Items */
-.playlist-item.magic-source {
-    background-color: rgba(29, 185, 84, 0.1);
-    border: 1px solid rgba(29, 185, 84, 0.3);
+/* Search Container */
+.search-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
-.playlist-item.magic-source:hover {
-    background-color: rgba(29, 185, 84, 0.15);
+.search-container input {
+    flex: 1;
 }
 
-.selected-playlist-item.magic-source {
-    background-color: rgba(29, 185, 84, 0.15);
-    border: 1px solid rgba(29, 185, 84, 0.4);
+.search-container button {
+    flex-shrink: 0;
 }
 
 /* Source Separator */

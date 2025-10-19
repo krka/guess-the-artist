@@ -472,6 +472,39 @@ class SpotifyClient {
     }
 
     /**
+     * Search for public playlists
+     */
+    async searchPlaylists(query, limit = 20) {
+        await this.ensureAuthenticated();
+
+        try {
+            const url = `${this.config.apiBaseUrl}/search?q=${encodeURIComponent(query)}&type=playlist&limit=${limit}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to search playlists: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            return data.playlists.items.map(playlist => ({
+                id: playlist.id,
+                name: playlist.name,
+                owner: playlist.owner.display_name,
+                trackCount: playlist.tracks.total,
+                image: playlist.images[0]?.url || null,
+            }));
+        } catch (error) {
+            console.error('Error searching playlists:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Get artists from a playlist
      */
     async getArtistsFromPlaylist(playlistId, progressCallback) {

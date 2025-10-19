@@ -6,20 +6,8 @@
 let spotifyClient = null;
 let teams = [];
 let userPlaylists = [];
+let previouslyUsedPlaylists = [];
 let selectedPlaylistIds = [];
-
-// Magic source entries (always available)
-const MAGIC_SOURCES = [
-    { id: '__top_artists__', name: 'My Top Artists', info: 'Based on your listening history' },
-    { id: '__related_artists__', name: 'Related Artists', info: 'Artists similar to your favorites' },
-    { id: '__decade_1960s__', name: 'Best of 1960s', info: 'Classic artists from the 60s' },
-    { id: '__decade_1970s__', name: 'Best of 1970s', info: 'Classic artists from the 70s' },
-    { id: '__decade_1980s__', name: 'Best of 1980s', info: 'Classic artists from the 80s' },
-    { id: '__decade_1990s__', name: 'Best of 1990s', info: 'Classic artists from the 90s' },
-    { id: '__decade_2000s__', name: 'Best of 2000s', info: 'Popular artists from the 2000s' },
-    { id: '__decade_2010s__', name: 'Best of 2010s', info: 'Popular artists from the 2010s' },
-    { id: '__decade_2020s__', name: 'Best of 2020s', info: 'Current popular artists' }
-];
 
 // DOM Elements
 const authSection = document.getElementById('auth-section');
@@ -119,6 +107,20 @@ function setupEventListeners() {
     if (timeRangeSelect) {
         timeRangeSelect.addEventListener('change', saveState);
     }
+
+    // Search playlists
+    const searchButton = document.getElementById('playlist-search-button');
+    const searchInput = document.getElementById('playlist-search-input');
+    if (searchButton) {
+        searchButton.addEventListener('click', searchPlaylists);
+    }
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchPlaylists();
+            }
+        });
+    }
 }
 
 
@@ -195,6 +197,9 @@ function restoreSavedState() {
             selectedPlaylistIds = JSON.parse(savedPlaylists);
             console.log('Restored selected playlists:', selectedPlaylistIds);
         }
+
+        // Restore previously used playlists
+        loadPreviouslyUsedPlaylists();
 
         // Restore game settings
         const savedSettings = localStorage.getItem('savedSettings');
@@ -388,9 +393,9 @@ function updateStartButtonState() {
 async function loadPlaylists() {
     if (userPlaylists.length > 0) {
         // Already loaded, just render
-        renderMagicSources();
         renderPlaylists();
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
         return;
     }
 
@@ -401,10 +406,9 @@ async function loadPlaylists() {
     try {
         userPlaylists = await spotifyClient.getUserPlaylists();
 
-        // Always render - magic sources are always available
-        renderMagicSources();
         renderPlaylists();
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
         playlistsLoading.classList.add('hidden');
         playlistsList.classList.remove('hidden');
     } catch (error) {
@@ -417,15 +421,13 @@ async function loadPlaylists() {
         } else if (error.message.includes('403')) {
             errorMsg += 'Permission denied. Please re-authorize the app.';
         } else {
-            errorMsg += 'You can still use Magic Sources (My Top Artists, Decades, Related Artists).';
+            errorMsg += 'Please try again later.';
         }
 
         showStatus(errorMsg, 'error');
         playlistsLoading.classList.add('hidden');
-
-        // Still show magic sources even if playlists fail
-        renderMagicSources();
         renderPlaylists();
+        renderPreviouslyUsed();
         playlistsList.classList.remove('hidden');
     }
 }
@@ -434,43 +436,7 @@ async function loadPlaylists() {
  * Filter playlists based on search query
  */
 function filterPlaylists(query) {
-    // Note: Only filters playlists, not magic sources
-    // Magic sources are in a separate tab
     renderPlaylists(query);
-}
-
-/**
- * Render available magic sources (not selected)
- */
-function renderMagicSources(filterQuery = '') {
-    const query = filterQuery.toLowerCase();
-    const magicSourcesList = document.getElementById('magic-sources-list');
-
-    const availableMagicSources = MAGIC_SOURCES.filter(source => {
-        const matchesFilter = source.name.toLowerCase().includes(query);
-        const notSelected = !selectedPlaylistIds.includes(source.id);
-        return matchesFilter && notSelected;
-    });
-
-    if (availableMagicSources.length === 0) {
-        magicSourcesList.innerHTML = '<div class="empty-state">No magic sources found</div>';
-        return;
-    }
-
-    const html = availableMagicSources.map(source => `
-        <div class="playlist-item magic-source">
-            <div class="playlist-item-content">
-                <span class="playlist-name">${source.name}</span>
-                <span class="playlist-info">${source.info}</span>
-            </div>
-            <button
-                class="btn-add-playlist"
-                onclick="addPlaylist('${source.id}')"
-            >Add</button>
-        </div>
-    `).join('');
-
-    magicSourcesList.innerHTML = html;
 }
 
 /**
@@ -509,7 +475,7 @@ function renderPlaylists(filterQuery = '') {
 }
 
 /**
- * Render selected sources (magic sources + playlists)
+ * Render selected playlists
  */
 function renderSelectedPlaylists() {
     if (selectedPlaylistIds.length === 0) {
@@ -521,33 +487,33 @@ function renderSelectedPlaylists() {
 
     let html = '';
 
-    // Render selected sources in order
+    // Render selected playlists in order
     selectedPlaylistIds.forEach(id => {
-        // Check if it's a magic source
-        const magicSource = MAGIC_SOURCES.find(s => s.id === id);
-        if (magicSource) {
+        // Check user playlists first
+        const playlist = userPlaylists.find(p => p.id === id);
+        if (playlist) {
             html += `
-                <div class="selected-playlist-item magic-source">
-                    <span class="playlist-name">${magicSource.name}</span>
-                    <span class="playlist-info">${magicSource.info}</span>
+                <div class="selected-playlist-item">
+                    <span class="playlist-name">${playlist.name}</span>
+                    <span class="playlist-info">${playlist.trackCount} tracks</span>
                     <button
                         class="btn-remove-playlist"
-                        onclick="removePlaylist('${magicSource.id}')"
-                        title="Remove source"
+                        onclick="removePlaylist('${playlist.id}')"
+                        title="Remove playlist"
                     >×</button>
                 </div>
             `;
         } else {
-            // It's a regular playlist
-            const playlist = userPlaylists.find(p => p.id === id);
-            if (playlist) {
+            // Check previously used playlists
+            const prevPlaylist = previouslyUsedPlaylists.find(p => p.id === id);
+            if (prevPlaylist) {
                 html += `
                     <div class="selected-playlist-item">
-                        <span class="playlist-name">${playlist.name}</span>
-                        <span class="playlist-info">${playlist.trackCount} tracks</span>
+                        <span class="playlist-name">${prevPlaylist.name}</span>
+                        <span class="playlist-info">${prevPlaylist.trackCount} tracks • by ${prevPlaylist.owner}</span>
                         <button
                             class="btn-remove-playlist"
-                            onclick="removePlaylist('${playlist.id}')"
+                            onclick="removePlaylist('${prevPlaylist.id}')"
                             title="Remove playlist"
                         >×</button>
                     </div>
@@ -562,14 +528,23 @@ function renderSelectedPlaylists() {
 /**
  * Add playlist to selection
  */
-function addPlaylist(playlistId) {
+function addPlaylist(playlistId, playlistData = null) {
     if (!selectedPlaylistIds.includes(playlistId)) {
         selectedPlaylistIds.push(playlistId);
 
+        // If this is a public playlist (has playlistData), save it to previously used
+        if (playlistData && !userPlaylists.find(p => p.id === playlistId)) {
+            // Add to previously used if not already there
+            if (!previouslyUsedPlaylists.find(p => p.id === playlistId)) {
+                previouslyUsedPlaylists.push(playlistData);
+                savePreviouslyUsedPlaylists();
+            }
+        }
+
         const currentFilter = playlistFilter ? playlistFilter.value : '';
-        renderMagicSources(currentFilter);
         renderPlaylists(currentFilter);
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
 
         // If filter resulted in empty view, clear it
         if (currentFilter && playlistsList.querySelector('.empty-state')) {
@@ -592,11 +567,138 @@ function removePlaylist(playlistId) {
     if (index !== -1) {
         selectedPlaylistIds.splice(index, 1);
         const currentFilter = playlistFilter ? playlistFilter.value : '';
-        renderMagicSources(currentFilter);
         renderPlaylists(currentFilter);
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
         saveState();
         console.log('Removed playlist:', playlistId);
+    }
+}
+
+/**
+ * Search for playlists
+ */
+async function searchPlaylists() {
+    const searchInput = document.getElementById('playlist-search-input');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchResultsLoading = document.getElementById('search-results-loading');
+    const query = searchInput.value.trim();
+
+    if (!query) {
+        searchResultsList.innerHTML = '<div class="empty-state">Enter a search term to find playlists</div>';
+        return;
+    }
+
+    searchResultsLoading.classList.remove('hidden');
+    searchResultsList.innerHTML = '';
+
+    try {
+        const results = await spotifyClient.searchPlaylists(query);
+
+        searchResultsLoading.classList.add('hidden');
+
+        if (results.length === 0) {
+            searchResultsList.innerHTML = '<div class="empty-state">No playlists found</div>';
+            return;
+        }
+
+        // Filter out already selected playlists
+        const availableResults = results.filter(p => !selectedPlaylistIds.includes(p.id));
+
+        if (availableResults.length === 0) {
+            searchResultsList.innerHTML = '<div class="empty-state">All results are already added</div>';
+            return;
+        }
+
+        const html = availableResults.map(playlist => `
+            <div class="playlist-item">
+                <div class="playlist-item-content">
+                    <span class="playlist-name">${playlist.name}</span>
+                    <span class="playlist-info">${playlist.trackCount} tracks • by ${playlist.owner}</span>
+                </div>
+                <button
+                    class="btn-add-playlist"
+                    onclick='addPlaylist("${playlist.id}", ${JSON.stringify(playlist).replace(/'/g, "&#39;")})'
+                >Add</button>
+            </div>
+        `).join('');
+
+        searchResultsList.innerHTML = html;
+    } catch (error) {
+        console.error('Search failed:', error);
+        searchResultsLoading.classList.add('hidden');
+        searchResultsList.innerHTML = '<div class="empty-state">Search failed. Please try again.</div>';
+        showStatus('Failed to search playlists', 'error');
+    }
+}
+
+/**
+ * Render previously used playlists
+ */
+function renderPreviouslyUsed() {
+    const previousPlaylistsList = document.getElementById('previous-playlists-list');
+
+    // Filter out already selected playlists
+    const availablePrevious = previouslyUsedPlaylists.filter(p => !selectedPlaylistIds.includes(p.id));
+
+    if (availablePrevious.length === 0) {
+        previousPlaylistsList.innerHTML = '<div class="empty-state">No previously used playlists</div>';
+        return;
+    }
+
+    const html = availablePrevious.map(playlist => `
+        <div class="playlist-item">
+            <div class="playlist-item-content">
+                <span class="playlist-name">${playlist.name}</span>
+                <span class="playlist-info">${playlist.trackCount} tracks • by ${playlist.owner}</span>
+            </div>
+            <button
+                class="btn-add-playlist"
+                onclick='addPlaylist("${playlist.id}", ${JSON.stringify(playlist).replace(/'/g, "&#39;")})'
+            >Add</button>
+            <button
+                class="btn-remove-inline"
+                onclick="removePreviouslyUsed('${playlist.id}')"
+                title="Remove from history"
+            >×</button>
+        </div>
+    `).join('');
+
+    previousPlaylistsList.innerHTML = html;
+}
+
+/**
+ * Remove a playlist from previously used list
+ */
+function removePreviouslyUsed(playlistId) {
+    previouslyUsedPlaylists = previouslyUsedPlaylists.filter(p => p.id !== playlistId);
+    savePreviouslyUsedPlaylists();
+    renderPreviouslyUsed();
+}
+
+/**
+ * Save previously used playlists to localStorage
+ */
+function savePreviouslyUsedPlaylists() {
+    try {
+        localStorage.setItem('previouslyUsedPlaylists', JSON.stringify(previouslyUsedPlaylists));
+    } catch (error) {
+        console.error('Failed to save previously used playlists:', error);
+    }
+}
+
+/**
+ * Load previously used playlists from localStorage
+ */
+function loadPreviouslyUsedPlaylists() {
+    try {
+        const saved = localStorage.getItem('previouslyUsedPlaylists');
+        if (saved) {
+            previouslyUsedPlaylists = JSON.parse(saved);
+        }
+    } catch (error) {
+        console.error('Failed to load previously used playlists:', error);
+        previouslyUsedPlaylists = [];
     }
 }
 
@@ -633,28 +735,11 @@ async function startGame() {
         return;
     }
 
-    // Validate at least one source is selected
+    // Validate at least one playlist is selected
     if (selectedPlaylistIds.length === 0) {
-        showStatus('Please select at least one artist source', 'error');
+        showStatus('Please select at least one playlist', 'error');
         return;
     }
-
-    // Separate magic sources from playlist IDs
-    const selectedSources = [];
-    const actualPlaylistIds = [];
-
-    selectedPlaylistIds.forEach(id => {
-        if (id.startsWith('__')) {
-            // Magic source - pass through the ID as-is
-            selectedSources.push(id);
-        } else {
-            // Regular playlist ID
-            actualPlaylistIds.push(id);
-            if (!selectedSources.includes('__playlists__')) {
-                selectedSources.push('__playlists__');
-            }
-        }
-    });
 
     // Filter to only enabled, non-empty teams with at least 2 players
     const validTeams = teams.filter(team =>
@@ -687,9 +772,7 @@ async function startGame() {
     const gameConfig = {
         teams: validTeams,
         playerDuration: roundDuration,  // Time per player (exactly what's in the setting)
-        artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
-        playlistIds: actualPlaylistIds,  // Only actual playlist IDs
-        timeRange: timeRange,  // For top artists
+        playlistIds: selectedPlaylistIds,  // Selected playlist IDs
         minPopularity: minPopularity,  // Filter out obscure artists
         minArtistsNeeded: totalGameSeconds  // Minimum to avoid running out
     };
@@ -769,5 +852,6 @@ window.updateTeamMembers = updateTeamMembers;
 window.toggleTeam = toggleTeam;
 window.addPlaylist = addPlaylist;
 window.removePlaylist = removePlaylist;
+window.removePreviouslyUsed = removePreviouslyUsed;
 window.switchTab = switchTab;
 window.switchInnerTab = switchInnerTab;

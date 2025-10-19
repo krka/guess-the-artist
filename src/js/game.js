@@ -101,20 +101,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Get friendly name for a source
- */
-function getSourceName(source) {
-    if (source === '__top_artists__') return 'My Top Artists';
-    if (source === '__related_artists__') return 'Related Artists';
-    if (source === '__playlists__') return 'Your Playlists';
-    if (source.startsWith('__decade_')) {
-        const decade = source.replace('__decade_', '').replace('__', '');
-        return `Best of ${decade}`;
-    }
-    return source;
-}
-
-/**
  * Format team name from member list
  * Examples: "Alice & Bob", "Alice, Bob & Charlie"
  */
@@ -148,39 +134,17 @@ function formatTeammates(allMembers, currentPlayer) {
  * Fetch artists based on game config
  */
 async function fetchArtists() {
-    const totalSources = gameConfig.artistSources.length;
-    let currentSource = 0;
-
     try {
         const artistsMap = new Map();
 
-        // Fetch from each selected source
-        for (const source of gameConfig.artistSources) {
-            currentSource++;
-            const sourceName = getSourceName(source);
-            showStatus(`Loading artists... (${currentSource}/${totalSources}: ${sourceName})`, 'info');
-
-            if (source === '__top_artists__') {
-                const timeRange = gameConfig.timeRange || 'medium_term';
-                const artists = await spotifyClient.getTopArtists(50, timeRange);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__related_artists__') {
-                const artists = await spotifyClient.getRelatedArtists(50);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source.startsWith('__decade_')) {
-                const decade = source.replace('__decade_', '').replace('__', '');
-                const artists = await spotifyClient.getArtistsByDecade(decade, 50);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__playlists__') {
-                console.log('Fetching artists from playlists...', gameConfig.playlistIds);
-                const progressCallback = (detail) => {
-                    showStatus(`Loading artists... (${currentSource}/${totalSources}: ${sourceName} - ${detail})`, 'info');
-                };
-                const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
-                console.log(`Got ${artists.length} artists from playlists`);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            }
-        }
+        // Fetch artists from playlists
+        console.log('Fetching artists from playlists...', gameConfig.playlistIds);
+        const progressCallback = (detail) => {
+            showStatus(`Loading artists from playlists... (${detail})`, 'info');
+        };
+        const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
+        console.log(`Got ${artists.length} artists from playlists`);
+        artists.forEach(artist => artistsMap.set(artist.id, artist));
 
         // Convert to array
         let allArtists = Array.from(artistsMap.values());
@@ -226,17 +190,14 @@ async function fetchArtists() {
                 minNeeded: minNeeded,
                 totalGameSeconds: totalGameSeconds,
                 minPopularity: gameConfig.minPopularity,
-                sources: gameConfig.artistSources,
                 playlistIds: gameConfig.playlistIds,
                 teams: gameConfig.teams.length,
-                playerDuration: gameConfig.playerDuration,
-                maxTeamSize: gameConfig.maxTeamSize,
-                totalTimePerTeam: gameConfig.totalTimePerTeam
+                playerDuration: gameConfig.playerDuration
             };
             console.error('Not enough artists! Debug info:', debugInfo);
 
             showErrorPhase(
-                `Not enough artists!\n\nFound: ${gameState.artists.length} artists\nNeeded: ${minNeeded} artists\n\nPossible fixes:\n• Add more artist sources (playlists, decades, etc.)\n• Lower the popularity filter (currently: ${gameConfig.minPopularity})\n• Reduce time per player (currently: ${gameConfig.playerDuration}s)\n• Use fewer teams (currently: ${gameConfig.teams.length} teams)`,
+                `Not enough artists!\n\nFound: ${gameState.artists.length} artists\nNeeded: ${minNeeded} artists\n\nPossible fixes:\n• Add more playlists\n• Lower the popularity filter (currently: ${gameConfig.minPopularity})\n• Reduce time per player (currently: ${gameConfig.playerDuration}s)\n• Use fewer teams (currently: ${gameConfig.teams.length} teams)`,
                 debugInfo
             );
             return;
@@ -538,19 +499,24 @@ function endRound() {
         document.getElementById('round-streak-display').innerHTML = '';
     }
 
+    // Always show round done phase first
+    hideAllPhases();
+    phaseRoundDone.classList.remove('hidden');
+
+    const playerAnnouncementDiv = phaseRoundDone.querySelector('.player-announcement');
+
     // Check if this team has more players
     if (gameState.currentPlayerIndex < team.members.length - 1) {
         // More players in this team
         gameState.currentPlayerIndex++;
         const nextPlayer = team.members[gameState.currentPlayerIndex];
         document.getElementById('next-player-name').textContent = nextPlayer;
-
-        hideAllPhases();
-        phaseRoundDone.classList.remove('hidden');
+        playerAnnouncementDiv.style.display = 'block';
         document.getElementById('continue-button').onclick = startRound;
     } else {
-        // Team is done
-        showTeamDone();
+        // Last player in team - hide "next player" section and go to team done
+        playerAnnouncementDiv.style.display = 'none';
+        document.getElementById('continue-button').onclick = showTeamDone;
     }
 }
 
