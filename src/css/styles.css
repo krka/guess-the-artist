@@ -868,11 +868,17 @@ select:focus {
     padding: 40px;
     border-radius: var(--border-radius);
     position: relative;
-    z-index: 10;
+    z-index: 1;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     text-align: center;
     max-width: 800px;
     width: 100%;
+}
+
+/* Content inside game-card needs to be above rain */
+.game-card > * {
+    position: relative;
+    z-index: 10;
 }
 
 /* Timer Section */
@@ -1339,7 +1345,7 @@ select:focus {
     height: 100vh;
     overflow: hidden;
     pointer-events: none;
-    z-index: 1;
+    z-index: 5;
 }
 
 .rain-artist {
