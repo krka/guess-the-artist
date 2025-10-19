@@ -68,6 +68,7 @@
                         <label for="artist-source">Artist Source:</label>
                         <select id="artist-source">
                             <option value="top_artists">My Top Artists</option>
+                            <option value="playlists">From My Playlists</option>
                             <option value="genres">Popular by Genre</option>
                         </select>
                     </div>
@@ -79,6 +80,15 @@
                             <option value="medium_term" selected>Last 6 Months</option>
                             <option value="long_term">All Time</option>
                         </select>
+                    </div>
+
+                    <div class="input-group hidden" id="playlist-selector-group">
+                        <label>Select Playlists:</label>
+                        <div id="playlists-loading" class="loading-message">Loading playlists...</div>
+                        <div id="playlists-list" class="playlists-list hidden">
+                            <!-- Playlists will be dynamically added here -->
+                        </div>
+                        <div id="playlists-empty" class="empty-state hidden">No playlists found</div>
                     </div>
 
                     <div class="input-group">

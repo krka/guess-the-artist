@@ -38,10 +38,9 @@ const SPOTIFY_CONFIG = {
 
     // OAuth scopes we need
     scopes: [
-        'user-top-read',      // Read user's top artists
-        // Add more scopes as needed:
-        // 'user-read-recently-played',  // For recently played artists
-        // 'user-library-read',           // For saved artists
+        'user-top-read',              // Read user's top artists
+        'playlist-read-private',       // Read user's playlists
+        'playlist-read-collaborative', // Read collaborative playlists
     ],
 
     // Spotify API endpoints

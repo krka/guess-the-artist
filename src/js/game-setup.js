@@ -5,6 +5,8 @@
 
 let spotifyClient = null;
 let teams = [];
+let userPlaylists = [];
+let selectedPlaylistIds = [];
 
 // DOM Elements
 const authSection = document.getElementById('auth-section');
@@ -17,6 +19,10 @@ const teamsList = document.getElementById('teams-list');
 const startGameButton = document.getElementById('start-game-button');
 const artistSourceSelect = document.getElementById('artist-source');
 const timeRangeGroup = document.getElementById('time-range-group');
+const playlistSelectorGroup = document.getElementById('playlist-selector-group');
+const playlistsLoading = document.getElementById('playlists-loading');
+const playlistsList = document.getElementById('playlists-list');
+const playlistsEmpty = document.getElementById('playlists-empty');
 const statusMessage = document.getElementById('status-message');
 
 /**
@@ -83,12 +89,20 @@ function setupEventListeners() {
         });
     }
 
-    // Show/hide time range based on artist source
-    artistSourceSelect.addEventListener('change', () => {
-        if (artistSourceSelect.value === 'top_artists') {
-            timeRangeGroup.style.display = 'block';
+    // Show/hide options based on artist source
+    artistSourceSelect.addEventListener('change', async () => {
+        const source = artistSourceSelect.value;
+
+        if (source === 'top_artists') {
+            timeRangeGroup.classList.remove('hidden');
+            playlistSelectorGroup.classList.add('hidden');
+        } else if (source === 'playlists') {
+            timeRangeGroup.classList.add('hidden');
+            playlistSelectorGroup.classList.remove('hidden');
+            await loadPlaylists();
         } else {
-            timeRangeGroup.style.display = 'none';
+            timeRangeGroup.classList.add('hidden');
+            playlistSelectorGroup.classList.add('hidden');
         }
     });
 }
@@ -277,6 +291,73 @@ function updateStartButtonState() {
 }
 
 /**
+ * Load user's playlists
+ */
+async function loadPlaylists() {
+    if (userPlaylists.length > 0) {
+        // Already loaded, just render
+        renderPlaylists();
+        return;
+    }
+
+    playlistsLoading.classList.remove('hidden');
+    playlistsList.classList.add('hidden');
+    playlistsEmpty.classList.add('hidden');
+
+    try {
+        userPlaylists = await spotifyClient.getUserPlaylists();
+
+        if (userPlaylists.length === 0) {
+            playlistsLoading.classList.add('hidden');
+            playlistsEmpty.classList.remove('hidden');
+        } else {
+            renderPlaylists();
+            playlistsLoading.classList.add('hidden');
+            playlistsList.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Failed to load playlists:', error);
+        showStatus(`Failed to load playlists: ${error.message}`, 'error');
+        playlistsLoading.classList.add('hidden');
+        playlistsEmpty.classList.remove('hidden');
+    }
+}
+
+/**
+ * Render playlists with checkboxes
+ */
+function renderPlaylists() {
+    playlistsList.innerHTML = userPlaylists.map(playlist => `
+        <div class="playlist-item">
+            <label>
+                <input
+                    type="checkbox"
+                    value="${playlist.id}"
+                    onchange="togglePlaylist('${playlist.id}')"
+                    ${selectedPlaylistIds.includes(playlist.id) ? 'checked' : ''}
+                />
+                <span class="playlist-name">${playlist.name}</span>
+                <span class="playlist-info">${playlist.trackCount} tracks</span>
+            </label>
+        </div>
+    `).join('');
+}
+
+/**
+ * Toggle playlist selection
+ */
+function togglePlaylist(playlistId) {
+    const index = selectedPlaylistIds.indexOf(playlistId);
+    if (index === -1) {
+        selectedPlaylistIds.push(playlistId);
+    } else {
+        selectedPlaylistIds.splice(index, 1);
+    }
+
+    console.log('Selected playlists:', selectedPlaylistIds);
+}
+
+/**
  * Start the game
  */
 function startGame() {
@@ -285,12 +366,19 @@ function startGame() {
     const timeRange = document.getElementById('time-range').value;
     const artistCount = parseInt(document.getElementById('artist-count').value);
 
+    // Validate playlist selection if playlists source is selected
+    if (artistSource === 'playlists' && selectedPlaylistIds.length === 0) {
+        showStatus('Please select at least one playlist', 'error');
+        return;
+    }
+
     const gameConfig = {
         teams: teams,
         roundDuration: roundDuration,
         artistSource: artistSource,
         timeRange: timeRange,
-        artistCount: artistCount
+        artistCount: artistCount,
+        playlistIds: selectedPlaylistIds,
     };
 
     // Save to localStorage for the game page
@@ -320,3 +408,4 @@ function showStatus(message, type = 'info') {
 window.removeTeam = removeTeam;
 window.updateTeamMembers = updateTeamMembers;
 window.updateTeamName = updateTeamName;
+window.togglePlaylist = togglePlaylist;

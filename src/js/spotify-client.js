@@ -390,4 +390,140 @@ class SpotifyClient {
             throw error;
         }
     }
+
+    /**
+     * Get user's playlists
+     */
+    async getUserPlaylists(limit = 50) {
+        await this.ensureAuthenticated();
+
+        try {
+            const url = `${this.config.apiBaseUrl}/me/playlists?limit=${limit}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to get playlists: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            return data.items.map(playlist => ({
+                id: playlist.id,
+                name: playlist.name,
+                owner: playlist.owner.display_name,
+                trackCount: playlist.tracks.total,
+                image: playlist.images[0]?.url || null,
+            }));
+        } catch (error) {
+            console.error('Error getting playlists:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get artists from a playlist
+     */
+    async getArtistsFromPlaylist(playlistId) {
+        await this.ensureAuthenticated();
+
+        const artistsMap = new Map();
+
+        try {
+            // Fetch all tracks from playlist (might need pagination)
+            let url = `${this.config.apiBaseUrl}/playlists/${playlistId}/tracks?limit=100`;
+
+            while (url) {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to get playlist tracks: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Extract unique artists
+                data.items.forEach(item => {
+                    if (item.track && item.track.artists) {
+                        item.track.artists.forEach(artist => {
+                            if (!artistsMap.has(artist.id)) {
+                                artistsMap.set(artist.id, {
+                                    id: artist.id,
+                                    name: artist.name,
+                                });
+                            }
+                        });
+                    }
+                });
+
+                // Get next page if available
+                url = data.next;
+            }
+
+            // Fetch full artist details for each unique artist
+            const artistIds = Array.from(artistsMap.keys());
+            const artists = [];
+
+            // Fetch in batches of 50 (Spotify API limit)
+            for (let i = 0; i < artistIds.length; i += 50) {
+                const batch = artistIds.slice(i, i + 50);
+                const batchUrl = `${this.config.apiBaseUrl}/artists?ids=${batch.join(',')}`;
+
+                const response = await fetch(batchUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    console.warn('Failed to fetch artist details for batch');
+                    continue;
+                }
+
+                const data = await response.json();
+
+                data.artists.forEach(artist => {
+                    if (artist) {
+                        artists.push({
+                            id: artist.id,
+                            name: artist.name,
+                            image: artist.images[0]?.url || null,
+                            popularity: artist.popularity,
+                            genres: artist.genres,
+                        });
+                    }
+                });
+            }
+
+            return artists;
+        } catch (error) {
+            console.error('Error getting artists from playlist:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get artists from multiple playlists
+     */
+    async getArtistsFromPlaylists(playlistIds) {
+        const artistsMap = new Map();
+
+        for (const playlistId of playlistIds) {
+            const artists = await this.getArtistsFromPlaylist(playlistId);
+            artists.forEach(artist => {
+                if (!artistsMap.has(artist.id)) {
+                    artistsMap.set(artist.id, artist);
+                }
+            });
+        }
+
+        return Array.from(artistsMap.values());
+    }
 }
