@@ -35,9 +35,19 @@
 
                 <!-- Team Management -->
                 <div class="teams-section">
-                    <div class="section-header">
-                        <h3>Teams</h3>
-                        <button id="add-team-button" class="btn-secondary">+ Add Team</button>
+                    <h3>Teams</h3>
+
+                    <div class="add-team-form">
+                        <label for="new-team-players">Players (comma-separated):</label>
+                        <div class="add-team-controls">
+                            <input
+                                type="text"
+                                id="new-team-players"
+                                class="team-input"
+                                placeholder="e.g., Alice, Bob"
+                            />
+                            <button id="add-team-button" class="btn-secondary">Add Team</button>
+                        </div>
                     </div>
 
                     <div id="teams-list" class="teams-list">

@@ -343,11 +343,38 @@ select:focus {
     margin-bottom: 30px;
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.add-team-form {
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
     margin-bottom: 20px;
+}
+
+.add-team-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #b3b3b3;
+}
+
+.add-team-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.team-input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: var(--border-radius);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.team-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
 
 .teams-list {

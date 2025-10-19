@@ -73,6 +73,16 @@ function setupEventListeners() {
     addTeamButton.addEventListener('click', addTeam);
     startGameButton.addEventListener('click', startGame);
 
+    // Add team on Enter key
+    const newTeamPlayersInput = document.getElementById('new-team-players');
+    if (newTeamPlayersInput) {
+        newTeamPlayersInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTeam();
+            }
+        });
+    }
+
     // Show/hide time range based on artist source
     artistSourceSelect.addEventListener('change', () => {
         if (artistSourceSelect.value === 'top_artists') {
@@ -142,16 +152,39 @@ function showLoginUI() {
  * Add a new team
  */
 function addTeam() {
+    const newTeamPlayersInput = document.getElementById('new-team-players');
+    const playersText = newTeamPlayersInput.value.trim();
+
+    if (!playersText) {
+        showStatus('Please enter player names', 'error');
+        return;
+    }
+
+    // Parse players from comma-separated input
+    const members = playersText
+        .split(',')
+        .map(m => m.trim())
+        .filter(m => m.length > 0);
+
+    if (members.length < 2) {
+        showStatus('A team needs at least 2 players', 'error');
+        return;
+    }
+
     const teamNumber = teams.length + 1;
     const team = {
         id: `team-${Date.now()}`,
         name: `Team ${teamNumber}`,
-        members: []
+        members: members
     };
 
     teams.push(team);
     renderTeams();
     updateStartButtonState();
+
+    // Clear input
+    newTeamPlayersInput.value = '';
+    showStatus(`Team ${teamNumber} added with ${members.length} players!`, 'success');
 }
 
 /**
