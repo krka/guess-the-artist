@@ -38,22 +38,23 @@ Visit https://127.0.0.1:8443
 The project uses commit-hash-based versioning to avoid stale file caching issues:
 
 1. **Make your changes** in `src/` and test locally
-2. **Commit your changes** to git
-3. **Prepare deployment**:
+2. **Commit your changes** to master:
    ```bash
-   ./deploy.sh
-   ```
-   This creates a versioned copy of assets in `v/$HASH/` and updates HTML files
-4. **Commit deployment**:
-   ```bash
-   git add -A
-   git commit -m "Deploy $(git rev-parse --short HEAD)"
+   git add <files>
+   git commit -m "Your message"
    git push origin master
    ```
-5. **Back to development mode**:
+3. **Deploy to GitHub Pages**:
    ```bash
-   ./dev.sh
+   make deploy
    ```
+   This automatically:
+   - Copies files to `gh-pages/` worktree
+   - Creates versioned assets in `v/$HASH/`
+   - Updates HTML to reference versioned paths
+   - Commits and pushes to gh-pages branch
+
+**Your dev environment stays clean!** All transformations happen in the `gh-pages/` worktree.
 
 See `v/README.md` for details on the versioning system.
 

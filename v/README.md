@@ -25,43 +25,31 @@ v/
 
 ## Deployment Workflow
 
-### 1. Development Mode (default)
+### 1. Development Mode (always)
 
-HTML files point to `src/` directly:
+In the **master branch**, HTML files always point to `src/` directly:
 ```html
 <link rel="stylesheet" href="src/css/styles.css">
 <script src="src/js/game.js"></script>
 ```
 
-Edit files in `src/` and test locally.
+Edit files in `src/` and test locally. Your dev environment is **never mutated**.
 
-### 2. Deploy
+### 2. Deploy to GitHub Pages
 
 ```bash
-./deploy.sh
+make deploy
 ```
 
 This:
-- Checks git is clean
-- Creates `v/$HASH/` directory
-- Copies `src/` to `v/$HASH/src/`
-- Updates HTML to reference `v/$HASH/src/`
-- Keeps last 3 versions, deletes older ones
+- Copies all files to `gh-pages/` worktree
+- Creates `v/$HASH/` directory in gh-pages
+- Copies `src/` to `v/$HASH/src/` in gh-pages
+- Updates HTML to reference `v/$HASH/src/` in gh-pages
+- Keeps last 3 versions in gh-pages, deletes older ones
+- Commits and pushes gh-pages branch
 
-Then commit and push:
-```bash
-git add -A
-git commit -m "Deploy $HASH"
-git push origin master
-```
-
-### 3. Back to Development
-
-```bash
-./dev.sh
-```
-
-Reverts HTML files to point to `src/` for continued development.
+**All transformations happen in the `gh-pages/` worktree.** The master branch stays clean for development.
 
 ## Cleanup
 

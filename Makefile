@@ -46,10 +46,7 @@ deploy:
 	fi
 	@echo "Deploying to GitHub Pages..."
 	@echo ""
-	@echo "Step 1: Creating versioned assets..."
-	@./deploy.sh
-	@echo ""
-	@echo "Step 2: Copying files to gh-pages worktree..."
+	@echo "Step 1: Copying files to gh-pages worktree..."
 	@rsync -av --delete \
 		--exclude='.git' \
 		--exclude='gh-pages' \
@@ -58,18 +55,28 @@ deploy:
 		--exclude='Makefile' \
 		--exclude='PLAN.md' \
 		--exclude='DEPLOY.md' \
-		--exclude='deploy.sh' \
-		--exclude='dev.sh' \
 		. gh-pages/
+	@echo ""
+	@echo "Step 2: Creating versioned assets in gh-pages..."
+	@cd gh-pages && \
+		HASH=$$(git -C .. rev-parse --short HEAD) && \
+		echo "  Commit hash: $$HASH" && \
+		VERSION_DIR="v/$$HASH" && \
+		mkdir -p "$$VERSION_DIR" && \
+		cp -r src "$$VERSION_DIR/" && \
+		echo "  Updating HTML files to reference $$VERSION_DIR..." && \
+		sed -i.bak -e "s|src/css/|$$VERSION_DIR/src/css/|g" \
+			-e "s|src/js/|$$VERSION_DIR/src/js/|g" \
+			index.html game.html debug.html && \
+		rm -f index.html.bak game.html.bak debug.html.bak && \
+		echo "  Cleaning up old versions (keeping last 3)..." && \
+		cd v && ls -t | tail -n +4 | xargs -r rm -rf && cd ..
 	@echo ""
 	@echo "Step 3: Committing to gh-pages..."
 	@cd gh-pages && \
 		git add -A && \
-		(git diff --cached --quiet || git commit -m "Deploy: $$(git rev-parse --short HEAD) - $$(date '+%Y-%m-%d %H:%M:%S')") && \
+		(git diff --cached --quiet || git commit -m "Deploy: $$(git -C .. rev-parse --short HEAD) - $$(date '+%Y-%m-%d %H:%M:%S')") && \
 		git push origin gh-pages
-	@echo ""
-	@echo "Step 4: Reverting to development mode..."
-	@./dev.sh
 	@echo ""
 	@echo "✓ Deployed! Your changes will be live at:"
 	@echo "  https://krka.github.io/guess-the-artist/"
