@@ -12,12 +12,6 @@ let selectedPlaylistIds = [];
 const MAGIC_SOURCES = [
     { id: '__top_artists__', name: 'My Top Artists', info: 'Based on your listening history' },
     { id: '__related_artists__', name: 'Related Artists', info: 'Artists similar to your favorites' },
-    { id: '__global_top_50__', name: 'Global Top 50', info: 'Most popular worldwide' },
-    { id: '__top_usa__', name: 'Top 50 USA', info: 'Most popular in United States' },
-    { id: '__top_uk__', name: 'Top 50 UK', info: 'Most popular in United Kingdom' },
-    { id: '__top_sweden__', name: 'Top 50 Sweden', info: 'Most popular in Sweden' },
-    { id: '__top_japan__', name: 'Top 50 Japan', info: 'Most popular in Japan' },
-    { id: '__top_brazil__', name: 'Top 50 Brazil', info: 'Most popular in Brazil' },
     { id: '__decade_1960s__', name: 'Best of 1960s', info: 'Classic artists from the 60s' },
     { id: '__decade_1970s__', name: 'Best of 1970s', info: 'Classic artists from the 70s' },
     { id: '__decade_1980s__', name: 'Best of 1980s', info: 'Classic artists from the 80s' },

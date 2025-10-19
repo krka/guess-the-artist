@@ -629,19 +629,4 @@ class SpotifyClient {
         }
     }
 
-    /**
-     * Known Spotify Top 50 playlist IDs by country
-     */
-    getTop50PlaylistId(country) {
-        const playlistIds = {
-            'global': '37i9dQZEVXbMDoHDwVN2tF',  // Global Top 50
-            'usa': '37i9dQZEVXbLRQDuF5jeBp',     // USA Top 50
-            'uk': '37i9dQZEVXbLnolsZ8PSNw',      // UK Top 50
-            'sweden': '37i9dQZEVXbLoATJ81JYXz',  // Sweden Top 50
-            'japan': '37i9dQZEVXbKXQ4mDTEBXq',   // Japan Top 50
-            'brazil': '37i9dQZEVXbMXbN3EUUhlg'   // Brazil Top 50
-        };
-
-        return playlistIds[country] || null;
-    }
 }

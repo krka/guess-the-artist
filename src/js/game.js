@@ -99,30 +99,6 @@ async function fetchArtists() {
             } else if (source === '__related_artists__') {
                 const artists = await spotifyClient.getRelatedArtists(50);
                 artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__global_top_50__') {
-                const playlistId = spotifyClient.getTop50PlaylistId('global');
-                const artists = await spotifyClient.getArtistsFromPlaylist(playlistId);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__top_usa__') {
-                const playlistId = spotifyClient.getTop50PlaylistId('usa');
-                const artists = await spotifyClient.getArtistsFromPlaylist(playlistId);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__top_uk__') {
-                const playlistId = spotifyClient.getTop50PlaylistId('uk');
-                const artists = await spotifyClient.getArtistsFromPlaylist(playlistId);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__top_sweden__') {
-                const playlistId = spotifyClient.getTop50PlaylistId('sweden');
-                const artists = await spotifyClient.getArtistsFromPlaylist(playlistId);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__top_japan__') {
-                const playlistId = spotifyClient.getTop50PlaylistId('japan');
-                const artists = await spotifyClient.getArtistsFromPlaylist(playlistId);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__top_brazil__') {
-                const playlistId = spotifyClient.getTop50PlaylistId('brazil');
-                const artists = await spotifyClient.getArtistsFromPlaylist(playlistId);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
             } else if (source.startsWith('__decade_')) {
                 const decade = source.replace('__decade_', '').replace('__', '');
                 const artists = await spotifyClient.getArtistsByDecade(decade, 50);
