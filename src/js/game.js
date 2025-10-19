@@ -9,7 +9,6 @@ let gameState = {
     artists: [],
     currentTeamIndex: 0,
     currentPlayerIndex: 0,
-    currentSingerIndex: 0,  // For swap-places mode: which player is currently singing
     currentArtistIndex: 0,
     scores: {}, // teamId -> score
     playerStats: {}, // playerId -> { correct, passed, fastestGuess, currentStreak, bestStreak, guesses: [] }
@@ -298,8 +297,6 @@ function startRound() {
         // Swap Places mode: use total team duration
         gameState.remainingTime = gameConfig.playerDuration * team.members.length;
         gameState.initialRoundDuration = gameState.remainingTime;
-        // Reset singer index at start of team's round
-        gameState.currentSingerIndex = 0;
     } else {
         // Individual mode: use player duration
         gameState.remainingTime = gameConfig.playerDuration;
@@ -474,12 +471,6 @@ function handleCorrect() {
         time: guessTime,
         wasCorrect: true
     });
-
-    // In swap-places mode, swap singer and guesser roles after correct answer
-    if (gameConfig.gameMode === 'swap-places') {
-        gameState.currentSingerIndex = (gameState.currentSingerIndex + 1) % team.members.length;
-        console.log('Swapped roles - new singer index:', gameState.currentSingerIndex);
-    }
 
     // Move to next artist
     gameState.currentArtistIndex++;
