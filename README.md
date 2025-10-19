@@ -23,7 +23,7 @@ Two players team up to identify music artists. One player sings, the other guess
    - **App name**: guess-the-artist (or whatever you prefer)
    - **App description**: Music guessing game
    - **Redirect URIs**: Add these (Spotify requires HTTPS now):
-     - `https://localhost:8080` (for local development)
+     - `https://localhost:8443` (for local development)
      - `https://krka.github.io/guess-the-artist/` (for production)
    - **API**: Select "Web API"
 4. Click "Save"
@@ -62,7 +62,7 @@ Test instantly on your machine (requires OpenSSL):
 # Start HTTPS server (generates SSL cert on first run):
 make run-local
 
-# Open: https://localhost:8080
+# Open: https://localhost:8443
 # (You'll see a security warning - click "Advanced" → "Proceed to localhost")
 ```
 

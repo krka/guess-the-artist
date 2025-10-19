@@ -10,7 +10,7 @@ import os
 import sys
 from pathlib import Path
 
-PORT = 8080
+PORT = 8443
 CERT_FILE = '.local-cert.pem'
 KEY_FILE = '.local-key.pem'
 

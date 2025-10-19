@@ -70,12 +70,12 @@ make run-local
 python3 -m http.server 8080
 ```
 
-**Node.js**:
+**Node.js with HTTPS**:
 ```bash
-npx http-server -p 8080
+npx http-server -p 8443 --ssl
 ```
 
-Then add `http://localhost:8080` to your Spotify app's redirect URIs.
+Then add `https://localhost:8443` to your Spotify app's redirect URIs.
 
 ## Multiple Environments
 
@@ -83,12 +83,11 @@ You can have both local and production redirect URIs configured simultaneously:
 
 **Spotify Dashboard → Redirect URIs**:
 ```
-http://localhost:8080
-http://127.0.0.1:8080
+https://localhost:8443
 https://krka.github.io/guess-the-artist/
 ```
 
-**Note**: Port 8080 is used instead of 8000 to avoid Spotify's HTTPS requirement issues on certain ports.
+**Note**: Spotify now requires HTTPS for all redirect URIs. Port 8443 is commonly used for HTTPS development.
 
 The app automatically uses `window.location.origin`, so it works in all environments without code changes!
 

@@ -6,7 +6,7 @@
  * 2. Create a new app
  * 3. Copy your Client ID and paste it below
  * 4. Add redirect URIs in your Spotify app settings:
- *    - For local: https://localhost:8080 (HTTPS required by Spotify)
+ *    - For local: https://localhost:8443 (HTTPS required by Spotify)
  *    - For production: https://krka.github.io/guess-the-artist/
  */
 
@@ -15,7 +15,7 @@ const SPOTIFY_CONFIG = {
     clientId: 'ec5f94ae62a74407920a3cb46f916fe6',
 
     // Redirect URI - automatically adapts to environment
-    // Localhost: just the origin (https://localhost:8080)
+    // Localhost: just the origin (https://localhost:8443)
     // GitHub Pages: origin + repo path (https://krka.github.io/guess-the-artist/)
     get redirectUri() {
         const origin = window.location.origin;

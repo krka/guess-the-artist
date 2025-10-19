@@ -3,7 +3,7 @@
 # Default target
 help:
 	@echo "Available targets:"
-	@echo "  make run-local     - Start HTTPS local development server on port 8080"
+	@echo "  make run-local     - Start HTTPS local development server on port 8443"
 	@echo "  make deploy-setup  - One-time setup for gh-pages deployment with git worktree"
 	@echo "  make deploy        - Deploy to GitHub Pages (gh-pages branch)"
 	@echo "  make clean         - Remove temporary files"
