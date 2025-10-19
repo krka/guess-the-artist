@@ -287,11 +287,20 @@ function removeTeam(teamId) {
 function updateTeamMembers(teamId, membersText) {
     const team = teams.find(t => t.id === teamId);
     if (team) {
-        // Split by comma and trim whitespace
-        team.members = membersText
-            .split(',')
-            .map(m => m.trim())
-            .filter(m => m.length > 0);
+        // Split by comma if present, otherwise by whitespace for simple names
+        if (membersText.includes(',')) {
+            // Comma-separated: split by comma, trim each part
+            team.members = membersText
+                .split(',')
+                .map(m => m.trim())
+                .filter(m => m.length > 0);
+        } else {
+            // Space-separated: split by any whitespace, trim and filter
+            team.members = membersText
+                .trim()
+                .split(/\s+/)
+                .filter(m => m.length > 0);
+        }
         updateStartButtonState();
         saveState();
     }
@@ -321,27 +330,15 @@ function renderTeams() {
                     title="Enable/disable team"
                 />
             </label>
-            <span class="team-label">${team.name}:</span>
             <input
                 type="text"
                 class="team-members-input"
                 value="${team.members.join(', ')}"
-                onchange="updateTeamMembers('${team.id}', this.value)"
-                placeholder="Player names (e.g., Alice, Bob)"
+                oninput="updateTeamMembers('${team.id}', this.value)"
+                placeholder="Player names (e.g., Alice Bob or Alice, Bob)"
             />
         </div>
     `).join('');
-}
-
-/**
- * Update team name
- */
-function updateTeamName(teamId, newName) {
-    const team = teams.find(t => t.id === teamId);
-    if (team) {
-        team.name = newName.trim() || `Team ${teams.indexOf(team) + 1}`;
-        saveState();
-    }
 }
 
 /**
@@ -369,7 +366,9 @@ function updateStartButtonState() {
 
     startGameButton.disabled = validTeams.length === 0;
 
-    if (validTeams.length === 0 && teams.length > 0) {
+    // Update button text to show team count
+    if (validTeams.length === 0) {
+        startGameButton.textContent = 'Start Game';
         const enabledTeams = teams.filter(team => team.enabled !== false);
         if (enabledTeams.length === 0) {
             startGameButton.title = 'Enable at least one team to start';
@@ -377,6 +376,8 @@ function updateStartButtonState() {
             startGameButton.title = 'Each enabled team needs at least 2 players';
         }
     } else {
+        const teamText = validTeams.length === 1 ? 'team' : 'teams';
+        startGameButton.textContent = `Start Game (${validTeams.length} ${teamText})`;
         startGameButton.title = '';
     }
 }
@@ -661,6 +662,24 @@ async function startGame() {
         team.members.length >= 2
     );
 
+    // Warn if any teams were filtered out
+    const filteredOutTeams = teams.filter(team =>
+        team.enabled === false || team.members.length < 2
+    );
+    if (filteredOutTeams.length > 0) {
+        const reasons = filteredOutTeams.map(team => {
+            const teamLabel = team.members.length > 0 ? team.members.join(' & ') : 'Empty team';
+            if (team.enabled === false) {
+                return `${teamLabel}: disabled`;
+            } else if (team.members.length < 2) {
+                return `${teamLabel}: only ${team.members.length} player(s)`;
+            }
+        }).join(', ');
+        console.warn('Teams excluded from game:', reasons);
+    }
+
+    console.log('Valid teams for game:', validTeams.map(t => `${t.members.join(' & ')} (${t.members.length} players)`).join(', '));
+
     // Calculate total game time needed
     const totalPlayerCount = validTeams.reduce((sum, team) => sum + team.members.length, 0);
     const totalGameSeconds = totalPlayerCount * roundDuration;
@@ -747,7 +766,6 @@ function switchInnerTab(tabName) {
 // Make functions available globally for onclick handlers
 window.removeTeam = removeTeam;
 window.updateTeamMembers = updateTeamMembers;
-window.updateTeamName = updateTeamName;
 window.toggleTeam = toggleTeam;
 window.addPlaylist = addPlaylist;
 window.removePlaylist = removePlaylist;

@@ -51,6 +51,18 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     gameConfig = JSON.parse(configJson);
     console.log('Game config loaded:', gameConfig);
+    console.log('Number of teams in game:', gameConfig.teams.length);
+    console.log('Teams:', gameConfig.teams.map(t => formatTeamName(t.members)).join(' | '));
+
+    // Randomize team order
+    shuffleArray(gameConfig.teams);
+
+    // Randomize player order within each team
+    gameConfig.teams.forEach(team => {
+        shuffleArray(team.members);
+    });
+
+    console.log('Teams and players randomized:', gameConfig.teams);
 
     // Validate we're logged in
     if (!spotifyClient.isAuthenticated()) {
@@ -68,7 +80,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             const playerId = `${team.id}-${member}`;
             gameState.playerStats[playerId] = {
                 name: member,
-                teamName: team.name,
+                teamMembers: team.members,
                 correct: 0,
                 passed: 0,
                 fastestGuess: null,
@@ -100,6 +112,36 @@ function getSourceName(source) {
         return `Best of ${decade}`;
     }
     return source;
+}
+
+/**
+ * Format team name from member list
+ * Examples: "Alice & Bob", "Alice, Bob & Charlie"
+ */
+function formatTeamName(members) {
+    if (!members || members.length === 0) return '';
+    if (members.length === 1) return members[0];
+    if (members.length === 2) return `${members[0]} & ${members[1]}`;
+
+    // For 3+: "Alice, Bob & Charlie"
+    const lastMember = members[members.length - 1];
+    const otherMembers = members.slice(0, -1);
+    return `${otherMembers.join(', ')} & ${lastMember}`;
+}
+
+/**
+ * Format teammates for a player (excluding the current player)
+ * Examples: "with Bob", "with Bob & Charlie"
+ */
+function formatTeammates(allMembers, currentPlayer) {
+    const teammates = allMembers.filter(m => m !== currentPlayer);
+    if (teammates.length === 0) return '';
+    if (teammates.length === 1) return `with ${teammates[0]}`;
+    if (teammates.length === 2) return `with ${teammates[0]} & ${teammates[1]}`;
+
+    const lastMember = teammates[teammates.length - 1];
+    const otherMembers = teammates.slice(0, -1);
+    return `with ${otherMembers.join(', ')} & ${lastMember}`;
 }
 
 /**
@@ -251,7 +293,7 @@ function showReadyPhase() {
     console.log('showReadyPhase - playerDuration:', gameConfig.playerDuration);
 
     document.getElementById('ready-player-name').textContent = player;
-    document.getElementById('ready-team-name').textContent = team.name;
+    document.getElementById('ready-team-name').textContent = formatTeammates(team.members, player);
     document.getElementById('ready-duration').textContent = gameConfig.playerDuration;
 
     // Preload first batch of images
@@ -475,15 +517,8 @@ function endRound() {
     document.getElementById('summary-passed').textContent = stats.passed;
     document.getElementById('summary-passed-bar').style.width = `${passedPercent}%`;
 
-    // Show background mosaic of correct guesses
-    const correctGuesses = stats.guesses.filter(g => g.wasCorrect);
-    const mosaicHtml = correctGuesses.slice(0, 20).map(guess => `
-        <div class="mosaic-tile" style="background-image: url('${guess.artist.image || ''}')"></div>
-    `).join('');
-    document.getElementById('round-mosaic').innerHTML = mosaicHtml;
-
-    // Show streak with artist thumbnails
-    if (stats.bestStreak > 0) {
+    // Show streak with artist thumbnails (only if 2 or more)
+    if (stats.bestStreak >= 2) {
         const streakArtists = stats.bestStreakArtists.slice(0, 5);
         const streakHtml = `
             <div class="streak-header">Best Streak: ${stats.bestStreak} in a row!</div>
@@ -525,7 +560,11 @@ function endRound() {
 function showTeamDone() {
     const team = gameConfig.teams[gameState.currentTeamIndex];
 
-    document.getElementById('completed-team-name').textContent = team.name;
+    console.log('showTeamDone - currentTeamIndex:', gameState.currentTeamIndex);
+    console.log('showTeamDone - total teams:', gameConfig.teams.length);
+    console.log('showTeamDone - team:', team);
+
+    document.getElementById('completed-team-name').textContent = formatTeamName(team.members);
     document.getElementById('team-total-score').textContent = gameState.scores[team.id];
 
     // Check if there are more teams
@@ -537,14 +576,17 @@ function showTeamDone() {
         const nextTeam = gameConfig.teams[gameState.currentTeamIndex];
         const nextPlayer = nextTeam.members[0];
 
+        console.log('showTeamDone - Moving to next team:', nextTeam);
+
         document.getElementById('next-team-player').textContent = nextPlayer;
-        document.getElementById('next-team-name').textContent = nextTeam.name;
+        document.getElementById('next-team-name').textContent = formatTeammates(nextTeam.members, nextPlayer);
 
         hideAllPhases();
         phaseTeamDone.classList.remove('hidden');
         document.getElementById('next-team-button').onclick = showReadyPhase;
     } else {
         // Game is over
+        console.log('showTeamDone - Game over!');
         showGameOver();
     }
 }
@@ -567,7 +609,7 @@ function showGameOver() {
     const scoresHtml = scoresList.map((item, index) => `
         <div class="score-item ${index === 0 ? 'winner' : ''}">
             <span class="rank">${index + 1}.</span>
-            <span class="team-name">${item.team.name}</span>
+            <span class="team-name">${formatTeamName(item.team.members)}</span>
             <span class="score">${item.score}</span>
         </div>
     `).join('');
@@ -590,7 +632,7 @@ function showGameOver() {
             <div class="highlight-content">
                 <img src="${fastestGuess.artist.image}" alt="${fastestGuess.artist.name}" class="highlight-artist-image">
                 <div class="highlight-text">
-                    <p><strong>${fastestPlayer.name}</strong> (${fastestPlayer.teamName})</p>
+                    <p><strong>${fastestPlayer.name}</strong> (${formatTeammates(fastestPlayer.teamMembers, fastestPlayer.name)})</p>
                     <p>${fastestGuess.artist.name}</p>
                     <p class="time">${fastestGuess.time.toFixed(1)}s</p>
                 </div>
@@ -625,7 +667,7 @@ function showGameOver() {
         document.getElementById('best-streak').innerHTML = `
             <div class="highlight-content">
                 <div class="highlight-text">
-                    <p><strong>${bestStreakPlayer.name}</strong> (${bestStreakPlayer.teamName})</p>
+                    <p><strong>${bestStreakPlayer.name}</strong> (${formatTeammates(bestStreakPlayer.teamMembers, bestStreakPlayer.name)})</p>
                     <p class="streak-number">${bestStreak} in a row!</p>
                     <div class="streak-artists">
                         ${artistImagesHtml}
