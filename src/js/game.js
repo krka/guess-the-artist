@@ -721,13 +721,13 @@ function createRainingArtists() {
     // If no correct answers, nothing to animate
     if (allCorrectArtists.length === 0) return;
 
-    // Create container for raining artists (behind the game card)
+    // Create container for raining artists (fixed to viewport, behind content)
     let rainContainer = document.getElementById('rain-container');
     if (!rainContainer) {
         rainContainer = document.createElement('div');
         rainContainer.id = 'rain-container';
         rainContainer.className = 'rain-container';
-        phaseGameOver.insertBefore(rainContainer, phaseGameOver.firstChild);
+        document.body.appendChild(rainContainer);
     }
 
     // Clear any existing rain
@@ -749,8 +749,8 @@ function createRainingArtists() {
         const xPos = Math.random() * 100;
         img.style.left = `${xPos}%`;
 
-        // Random animation duration (8-15 seconds for variety)
-        const duration = 8 + Math.random() * 7;
+        // Random animation duration (5-20 seconds for more variety)
+        const duration = 5 + Math.random() * 15;
         img.style.animationDuration = `${duration}s`;
 
         // Random delay to stagger the start (0-5 seconds)
