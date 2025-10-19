@@ -108,6 +108,15 @@ function setupEventListeners() {
             filterPlaylists(e.target.value);
         });
     }
+
+    // Update popularity value display
+    const minPopularitySlider = document.getElementById('min-popularity');
+    const popularityValueDisplay = document.getElementById('popularity-value');
+    if (minPopularitySlider && popularityValueDisplay) {
+        minPopularitySlider.addEventListener('input', (e) => {
+            popularityValueDisplay.textContent = e.target.value;
+        });
+    }
 }
 
 
@@ -553,6 +562,7 @@ function startGame() {
     const roundDuration = parseInt(document.getElementById('round-duration').value);
     const artistCount = parseInt(document.getElementById('artist-count').value);
     const timeRange = document.getElementById('time-range').value;
+    const minPopularity = parseInt(document.getElementById('min-popularity').value);
 
     // Validate at least one source is selected
     if (selectedPlaylistIds.length === 0) {
@@ -583,7 +593,8 @@ function startGame() {
         artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
         artistCount: artistCount,
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs
-        timeRange: timeRange  // For top artists
+        timeRange: timeRange,  // For top artists
+        minPopularity: minPopularity  // Filter out obscure artists
     };
 
     // Save to localStorage for the game page

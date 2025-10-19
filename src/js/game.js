@@ -109,15 +109,45 @@ async function fetchArtists() {
             }
         }
 
-        // Convert to array and shuffle
-        gameState.artists = Array.from(artistsMap.values());
-        shuffleArray(gameState.artists);
+        // Convert to array
+        let allArtists = Array.from(artistsMap.values());
+        console.log(`Fetched ${allArtists.length} total artists`);
 
-        // Limit to requested count
-        gameState.artists = gameState.artists.slice(0, gameConfig.artistCount);
+        // Filter by minimum popularity if set
+        const minPopularity = gameConfig.minPopularity || 0;
+        if (minPopularity > 0) {
+            const beforeFilter = allArtists.length;
+            allArtists = allArtists.filter(artist => {
+                const popularity = artist.popularity || 0;
+                return popularity >= minPopularity;
+            });
+            console.log(`Filtered from ${beforeFilter} to ${allArtists.length} artists (min popularity: ${minPopularity})`);
+        }
 
-        console.log(`Loaded ${gameState.artists.length} artists`);
-        showStatus('Artists loaded!', 'success');
+        // Calculate max artists needed (total game seconds)
+        const totalGameSeconds = gameConfig.teams.reduce((total, team) => {
+            return total + gameConfig.roundDuration * team.members.length;
+        }, 0);
+
+        console.log(`Total game duration: ${totalGameSeconds}s, artists available: ${allArtists.length}`);
+
+        // If we have more artists than needed, keep the most popular ones
+        if (allArtists.length > totalGameSeconds) {
+            allArtists.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+            allArtists = allArtists.slice(0, totalGameSeconds);
+            console.log(`Kept top ${allArtists.length} most popular artists`);
+        }
+
+        // Shuffle and limit to requested count
+        shuffleArray(allArtists);
+        gameState.artists = allArtists.slice(0, Math.min(gameConfig.artistCount, allArtists.length));
+
+        console.log(`Loaded ${gameState.artists.length} artists for game`);
+        if (minPopularity > 0) {
+            showStatus(`Artists loaded! (filtered by popularity ≥ ${minPopularity})`, 'success');
+        } else {
+            showStatus('Artists loaded!', 'success');
+        }
     } catch (error) {
         console.error('Failed to fetch artists:', error);
         showStatus(`Failed to load artists: ${error.message}`, 'error');
