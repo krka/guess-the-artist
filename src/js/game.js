@@ -264,6 +264,9 @@ function showReadyPhase() {
     hideAllPhases();
     phaseReady.classList.remove('hidden');
 
+    // Clear any lingering status messages
+    statusMessage.classList.add('hidden');
+
     const team = gameConfig.teams[gameState.currentTeamIndex];
 
     console.log('showReadyPhase - gameConfig:', gameConfig);
