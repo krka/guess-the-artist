@@ -26,3 +26,10 @@ build/
 # Logs
 logs/
 *.log
+
+# Local SSL certificates
+.local-cert.pem
+.local-key.pem
+
+# Git worktree for gh-pages deployment
+gh-pages/

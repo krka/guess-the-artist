@@ -22,10 +22,9 @@ Two players team up to identify music artists. One player sings, the other guess
 3. Fill in the details:
    - **App name**: guess-the-artist (or whatever you prefer)
    - **App description**: Music guessing game
-   - **Redirect URIs**: Add all three (exact match required):
-     - `http://localhost:8080` (no trailing slash - port 8080 to avoid HTTPS issues)
-     - `http://127.0.0.1:8080` (no trailing slash)
-     - `https://krka.github.io/guess-the-artist/` (with trailing slash)
+   - **Redirect URIs**: Add these (Spotify requires HTTPS now):
+     - `https://localhost:8080` (for local development)
+     - `https://krka.github.io/guess-the-artist/` (for production)
    - **API**: Select "Web API"
 4. Click "Save"
 5. Copy your **Client ID** (you won't need the Client Secret!)
@@ -36,26 +35,39 @@ The Client ID is already configured in `src/js/config.js`. If you're forking thi
 1. Create your own Spotify app (step 1 above)
 2. Update the Client ID in `src/js/config.js`
 
-### 3. Run the App
+### 3. Choose Your Development Workflow
 
-Since this is a purely frontend app, you just need a simple HTTP server:
+You have two options:
 
-**Using the Makefile (easiest)**:
+#### Option A: GitHub Pages Only (Simplest!)
+
+Just push to GitHub and test on the live site. No localhost needed!
+
 ```bash
+# Make your changes, then deploy:
+make deploy
+
+# Wait ~1-2 minutes, then visit:
+# https://krka.github.io/guess-the-artist/
+```
+
+**Pros**: No localhost SSL hassle, real HTTPS, works immediately
+**Cons**: ~1-2 minute delay per deployment
+
+#### Option B: Local HTTPS Development
+
+Test instantly on your machine (requires OpenSSL):
+
+```bash
+# Start HTTPS server (generates SSL cert on first run):
 make run-local
+
+# Open: https://localhost:8080
+# (You'll see a security warning - click "Advanced" → "Proceed to localhost")
 ```
 
-**Or manually with Python**:
-```bash
-python3 -m http.server 8080
-```
-
-**Or with Node.js**:
-```bash
-npx http-server -p 8080
-```
-
-Then open your browser to: **http://localhost:8080**
+**Pros**: Instant feedback, no deployment wait
+**Cons**: Browser security warnings, requires OpenSSL
 
 ### 4. Login and Test
 
