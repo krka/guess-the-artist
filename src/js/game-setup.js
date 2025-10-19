@@ -691,18 +691,13 @@ async function startGame() {
     // Filter to only enabled teams
     const enabledTeams = teams.filter(team => team.enabled !== false);
 
-    // Calculate fair time distribution
-    const maxTeamSize = Math.max(...enabledTeams.map(t => t.members.length));
-    const totalTimePerTeam = roundDuration * maxTeamSize;
-
-    // Calculate minimum artists needed for the entire game
-    const totalGameSeconds = enabledTeams.length * totalTimePerTeam;
+    // Calculate total game time needed
+    const totalPlayerCount = enabledTeams.reduce((sum, team) => sum + team.members.length, 0);
+    const totalGameSeconds = totalPlayerCount * roundDuration;
 
     const gameConfig = {
         teams: enabledTeams,
-        playerDuration: roundDuration,  // Time per player in largest team
-        maxTeamSize: maxTeamSize,  // Largest team size
-        totalTimePerTeam: totalTimePerTeam,  // Total time each team gets
+        playerDuration: roundDuration,  // Time per player (exactly what's in the setting)
         artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs
         timeRange: timeRange,  // For top artists

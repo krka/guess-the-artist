@@ -19,6 +19,9 @@ let gameState = {
     phase: 'ready'
 };
 
+// Preloaded images cache
+const preloadedImages = new Map();
+
 // DOM Elements
 const statusMessage = document.getElementById('status-message');
 
@@ -216,6 +219,22 @@ function shuffleArray(array) {
 }
 
 /**
+ * Preload artist images for smooth transitions
+ */
+function preloadImages(startIndex, count = 5) {
+    for (let i = 0; i < count; i++) {
+        const index = (startIndex + i) % gameState.artists.length;
+        const artist = gameState.artists[index];
+
+        if (artist.image && !preloadedImages.has(artist.id)) {
+            const img = new Image();
+            img.src = artist.image;
+            preloadedImages.set(artist.id, img);
+        }
+    }
+}
+
+/**
  * Show ready phase
  */
 function showReadyPhase() {
@@ -224,11 +243,13 @@ function showReadyPhase() {
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
-    const playerDuration = Math.floor(gameConfig.totalTimePerTeam / team.members.length);
 
     document.getElementById('ready-player-name').textContent = player;
     document.getElementById('ready-team-name').textContent = team.name;
-    document.getElementById('ready-duration').textContent = playerDuration;
+    document.getElementById('ready-duration').textContent = gameConfig.playerDuration;
+
+    // Preload first batch of images
+    preloadImages(gameState.currentArtistIndex, 5);
 
     // Setup go button
     const goButton = document.getElementById('go-button');
@@ -245,10 +266,9 @@ function startRound() {
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
-    const playerDuration = Math.floor(gameConfig.totalTimePerTeam / team.members.length);
 
     // Reset round state
-    gameState.remainingTime = playerDuration;
+    gameState.remainingTime = gameConfig.playerDuration;
     gameState.roundStartTime = Date.now();
     gameState.playerStats[playerId].currentStreak = 0;
     gameState.playerStats[playerId].currentStreakArtists = [];
@@ -276,10 +296,20 @@ function showCurrentArtist() {
         console.log('Ran out of artists, reshuffling...');
         shuffleArray(gameState.artists);
         gameState.currentArtistIndex = 0;
+        preloadedImages.clear(); // Clear cache on reshuffle
     }
 
     const artist = gameState.artists[gameState.currentArtistIndex];
-    document.getElementById('artist-image').src = artist.image || 'https://via.placeholder.com/300?text=No+Image';
+
+    // Use preloaded image if available, otherwise use URL directly
+    const imgElement = document.getElementById('artist-image');
+    const preloadedImg = preloadedImages.get(artist.id);
+    if (preloadedImg && preloadedImg.complete) {
+        imgElement.src = preloadedImg.src;
+    } else {
+        imgElement.src = artist.image || 'https://via.placeholder.com/300?text=No+Image';
+    }
+
     document.getElementById('artist-name').textContent = artist.name;
 
     // Show popularity (for debugging/tuning filter)
@@ -288,6 +318,9 @@ function showCurrentArtist() {
 
     // Track when this artist was shown (for accurate guess timing)
     gameState.currentArtistStartTime = Date.now();
+
+    // Preload next 5 images
+    preloadImages(gameState.currentArtistIndex + 1, 5);
 }
 
 /**
@@ -314,9 +347,7 @@ function updateTimerDisplay() {
     timerElement.textContent = gameState.remainingTime;
 
     // Update progress bar
-    const team = gameConfig.teams[gameState.currentTeamIndex];
-    const playerDuration = Math.floor(gameConfig.totalTimePerTeam / team.members.length);
-    const progress = (gameState.remainingTime / playerDuration) * 100;
+    const progress = (gameState.remainingTime / gameConfig.playerDuration) * 100;
     document.getElementById('progress-fill').style.width = `${progress}%`;
 
     // Color changes based on time
