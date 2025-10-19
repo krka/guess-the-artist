@@ -56,13 +56,21 @@ deploy:
 	@echo "Step 2: Creating versioned assets in gh-pages..."
 	@cd gh-pages && \
 		HASH=$$(git -C .. rev-parse --short HEAD) && \
+		TIMESTAMP=$$(date +%s) && \
+		READABLE_DATE=$$(date '+%Y-%m-%d %H:%M:%S') && \
 		echo "  Commit hash: $$HASH" && \
+		echo "  Timestamp: $$TIMESTAMP" && \
 		VERSION_DIR="v/$$HASH" && \
 		mkdir -p "$$VERSION_DIR" && \
 		cp -r src "$$VERSION_DIR/" && \
-		echo "  Updating HTML files to reference $$VERSION_DIR..." && \
-		sed -i.bak -e "s|src/css/|$$VERSION_DIR/src/css/|g" \
-			-e "s|src/js/|$$VERSION_DIR/src/js/|g" \
+		echo "  Updating HTML files to reference $$VERSION_DIR with cache busting..." && \
+		sed -i.bak \
+			-e "s|src/css/styles.css|$$VERSION_DIR/src/css/styles.css?v=$$TIMESTAMP|g" \
+			-e "s|src/js/config.js|$$VERSION_DIR/src/js/config.js?v=$$TIMESTAMP|g" \
+			-e "s|src/js/spotify-client.js|$$VERSION_DIR/src/js/spotify-client.js?v=$$TIMESTAMP|g" \
+			-e "s|src/js/game-setup.js|$$VERSION_DIR/src/js/game-setup.js?v=$$TIMESTAMP|g" \
+			-e "s|src/js/game.js|$$VERSION_DIR/src/js/game.js?v=$$TIMESTAMP|g" \
+			-e "s|__VERSION_PLACEHOLDER__|$$HASH ($$READABLE_DATE)|g" \
 			index.html game.html debug.html && \
 		rm -f index.html.bak game.html.bak debug.html.bak && \
 		echo "  Cleaning up old versions (keeping last 3)..." && \
