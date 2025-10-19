@@ -49,10 +49,7 @@ deploy:
 	@echo "Step 1: Copying files to gh-pages worktree..."
 	@rsync -av --delete \
 		--include='*.html' \
-		--include='*.md' \
-		--include='src/***' \
-		--include='scripts/***' \
-		--include='v/README.md' \
+		--include='README.md' \
 		--exclude='*' \
 		. gh-pages/
 	@echo ""
