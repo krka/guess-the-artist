@@ -13,6 +13,7 @@ let gameState = {
     scores: {}, // teamId -> score
     playerStats: {}, // playerId -> { correct, passed, fastestGuess, currentStreak, bestStreak, guesses: [] }
     roundStartTime: null,
+    currentArtistStartTime: null,
     timerInterval: null,
     remainingTime: 0,
     phase: 'ready'
@@ -69,7 +70,9 @@ window.addEventListener('DOMContentLoaded', async () => {
                 passed: 0,
                 fastestGuess: null,
                 currentStreak: 0,
+                currentStreakArtists: [],
                 bestStreak: 0,
+                bestStreakArtists: [],
                 guesses: []
             };
         });
@@ -248,6 +251,7 @@ function startRound() {
     gameState.remainingTime = playerDuration;
     gameState.roundStartTime = Date.now();
     gameState.playerStats[playerId].currentStreak = 0;
+    gameState.playerStats[playerId].currentStreakArtists = [];
 
     // Show first artist
     showCurrentArtist();
@@ -281,6 +285,9 @@ function showCurrentArtist() {
     // Show popularity (for debugging/tuning filter)
     const popularity = artist.popularity || 0;
     document.getElementById('artist-popularity').textContent = `Popularity: ${popularity}`;
+
+    // Track when this artist was shown (for accurate guess timing)
+    gameState.currentArtistStartTime = Date.now();
 }
 
 /**
@@ -347,6 +354,7 @@ function handlePass() {
 
     stats.passed++;
     stats.currentStreak = 0; // Break streak
+    stats.currentStreakArtists = []; // Clear streak artists
 
     // Move to next artist
     gameState.currentArtistIndex++;
@@ -364,13 +372,17 @@ function handleCorrect() {
     const stats = gameState.playerStats[playerId];
     const artist = gameState.artists[gameState.currentArtistIndex];
 
-    const guessTime = (Date.now() - gameState.roundStartTime) / 1000;
+    const guessTime = (Date.now() - gameState.currentArtistStartTime) / 1000;
 
     // Update stats
     stats.correct++;
     stats.currentStreak++;
+    stats.currentStreakArtists.push(artist);
+
+    // Update best streak if current is better
     if (stats.currentStreak > stats.bestStreak) {
         stats.bestStreak = stats.currentStreak;
+        stats.bestStreakArtists = [...stats.currentStreakArtists];
     }
 
     // Track fastest guess
@@ -529,11 +541,25 @@ function showGameOver() {
     });
 
     if (bestStreakPlayer && bestStreak > 0) {
+        // Show up to 5 artist images from the streak
+        const streakArtists = bestStreakPlayer.bestStreakArtists.slice(0, 5);
+        const artistImagesHtml = streakArtists.map(artist => `
+            <img src="${artist.image || 'https://via.placeholder.com/50?text=No+Image'}"
+                 alt="${artist.name}"
+                 class="streak-artist-image"
+                 title="${artist.name}"
+            />
+        `).join('');
+
         document.getElementById('best-streak').innerHTML = `
             <div class="highlight-content">
                 <div class="highlight-text">
                     <p><strong>${bestStreakPlayer.name}</strong> (${bestStreakPlayer.teamName})</p>
                     <p class="streak-number">${bestStreak} in a row!</p>
+                    <div class="streak-artists">
+                        ${artistImagesHtml}
+                        ${bestStreak > 5 ? `<span class="streak-more">+${bestStreak - 5} more</span>` : ''}
+                    </div>
                 </div>
             </div>
         `;

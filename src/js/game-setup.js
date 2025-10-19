@@ -109,13 +109,25 @@ function setupEventListeners() {
         });
     }
 
-    // Update popularity value display
+    // Update popularity value display and save settings
     const minPopularitySlider = document.getElementById('min-popularity');
     const popularityValueDisplay = document.getElementById('popularity-value');
     if (minPopularitySlider && popularityValueDisplay) {
         minPopularitySlider.addEventListener('input', (e) => {
             popularityValueDisplay.textContent = e.target.value;
         });
+        minPopularitySlider.addEventListener('change', saveState);
+    }
+
+    // Save settings when changed
+    const roundDurationInput = document.getElementById('round-duration');
+    if (roundDurationInput) {
+        roundDurationInput.addEventListener('change', saveState);
+    }
+
+    const timeRangeSelect = document.getElementById('time-range');
+    if (timeRangeSelect) {
+        timeRangeSelect.addEventListener('change', saveState);
     }
 }
 
@@ -193,6 +205,23 @@ function restoreSavedState() {
             selectedPlaylistIds = JSON.parse(savedPlaylists);
             console.log('Restored selected playlists:', selectedPlaylistIds);
         }
+
+        // Restore game settings
+        const savedSettings = localStorage.getItem('savedSettings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (settings.roundDuration !== undefined) {
+                document.getElementById('round-duration').value = settings.roundDuration;
+            }
+            if (settings.timeRange !== undefined) {
+                document.getElementById('time-range').value = settings.timeRange;
+            }
+            if (settings.minPopularity !== undefined) {
+                document.getElementById('min-popularity').value = settings.minPopularity;
+                document.getElementById('popularity-value').textContent = settings.minPopularity;
+            }
+            console.log('Restored settings:', settings);
+        }
     } catch (error) {
         console.error('Failed to restore saved state:', error);
     }
@@ -205,6 +234,14 @@ function saveState() {
     try {
         localStorage.setItem('savedTeams', JSON.stringify(teams));
         localStorage.setItem('savedPlaylists', JSON.stringify(selectedPlaylistIds));
+
+        // Save game settings
+        const settings = {
+            roundDuration: parseInt(document.getElementById('round-duration').value),
+            timeRange: document.getElementById('time-range').value,
+            minPopularity: parseInt(document.getElementById('min-popularity').value)
+        };
+        localStorage.setItem('savedSettings', JSON.stringify(settings));
     } catch (error) {
         console.error('Failed to save state:', error);
     }
@@ -246,7 +283,8 @@ function addTeam() {
     const team = {
         id: `team-${Date.now()}`,
         name: `Team ${teamNumber}`,
-        members: members
+        members: members,
+        enabled: true
     };
 
     teams.push(team);
@@ -295,8 +333,16 @@ function renderTeams() {
     }
 
     teamsList.innerHTML = teams.map(team => `
-        <div class="team-card" data-team-id="${team.id}">
+        <div class="team-card ${team.enabled === false ? 'disabled' : ''}" data-team-id="${team.id}">
             <div class="team-header">
+                <label class="team-checkbox-label">
+                    <input
+                        type="checkbox"
+                        ${team.enabled !== false ? 'checked' : ''}
+                        onchange="toggleTeam('${team.id}', this.checked)"
+                        title="Enable/disable team"
+                    />
+                </label>
                 <input
                     type="text"
                     class="team-name-input"
@@ -311,7 +357,6 @@ function renderTeams() {
                 >×</button>
             </div>
             <div class="team-members">
-                <label>Players (comma-separated):</label>
                 <input
                     type="text"
                     class="members-input"
@@ -337,15 +382,33 @@ function updateTeamName(teamId, newName) {
 }
 
 /**
+ * Toggle team enabled/disabled
+ */
+function toggleTeam(teamId, enabled) {
+    const team = teams.find(t => t.id === teamId);
+    if (team) {
+        team.enabled = enabled;
+        renderTeams();
+        updateStartButtonState();
+        saveState();
+    }
+}
+
+/**
  * Update start button state
  */
 function updateStartButtonState() {
-    // Enable start button if at least one team has at least 2 members
-    const hasValidTeam = teams.some(team => team.members.length >= 2);
+    // Enable start button if at least one enabled team has at least 2 members
+    const enabledTeams = teams.filter(team => team.enabled !== false);
+    const hasValidTeam = enabledTeams.some(team => team.members.length >= 2);
     startGameButton.disabled = !hasValidTeam;
 
     if (!hasValidTeam && teams.length > 0) {
-        startGameButton.title = 'Each team needs at least 2 players';
+        if (enabledTeams.length === 0) {
+            startGameButton.title = 'Enable at least one team to start';
+        } else {
+            startGameButton.title = 'Each enabled team needs at least 2 players';
+        }
     } else {
         startGameButton.title = '';
     }
@@ -625,15 +688,18 @@ async function startGame() {
         }
     });
 
+    // Filter to only enabled teams
+    const enabledTeams = teams.filter(team => team.enabled !== false);
+
     // Calculate fair time distribution
-    const maxTeamSize = Math.max(...teams.map(t => t.members.length));
+    const maxTeamSize = Math.max(...enabledTeams.map(t => t.members.length));
     const totalTimePerTeam = roundDuration * maxTeamSize;
 
     // Calculate minimum artists needed for the entire game
-    const totalGameSeconds = teams.length * totalTimePerTeam;
+    const totalGameSeconds = enabledTeams.length * totalTimePerTeam;
 
     const gameConfig = {
-        teams: teams,
+        teams: enabledTeams,
         playerDuration: roundDuration,  // Time per player in largest team
         maxTeamSize: maxTeamSize,  // Largest team size
         totalTimePerTeam: totalTimePerTeam,  // Total time each team gets
@@ -717,6 +783,7 @@ function switchInnerTab(tabName) {
 window.removeTeam = removeTeam;
 window.updateTeamMembers = updateTeamMembers;
 window.updateTeamName = updateTeamName;
+window.toggleTeam = toggleTeam;
 window.addPlaylist = addPlaylist;
 window.removePlaylist = removePlaylist;
 window.switchTab = switchTab;

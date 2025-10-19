@@ -394,6 +394,11 @@ select:focus {
     border-radius: var(--border-radius);
     margin-bottom: 15px;
     border: 1px solid #404040;
+    transition: opacity 0.3s ease;
+}
+
+.team-card.disabled {
+    opacity: 0.5;
 }
 
 .team-header {
@@ -401,6 +406,20 @@ select:focus {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    gap: 10px;
+}
+
+.team-checkbox-label {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.team-checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
 }
 
 .team-name-input {
@@ -1015,6 +1034,29 @@ select:focus {
     color: var(--primary-color);
     font-size: 1.5rem;
     font-weight: bold;
+}
+
+.streak-artists {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.streak-artist-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.streak-more {
+    color: #b3b3b3;
+    font-size: 0.9rem;
+    font-style: italic;
 }
 
 @media (max-width: 768px) {
