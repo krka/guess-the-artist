@@ -682,6 +682,71 @@ function showGameOver() {
     } else {
         document.getElementById('best-streak').innerHTML = '<p>No streaks recorded</p>';
     }
+
+    // Start raining artists animation
+    createRainingArtists();
+}
+
+/**
+ * Create raining artists background animation
+ */
+function createRainingArtists() {
+    // Collect all correct guesses from all players
+    const allCorrectArtists = [];
+    Object.values(gameState.playerStats).forEach(stats => {
+        stats.guesses.forEach(guess => {
+            if (guess.wasCorrect && guess.artist.image) {
+                allCorrectArtists.push(guess.artist);
+            }
+        });
+    });
+
+    // If no correct answers, nothing to animate
+    if (allCorrectArtists.length === 0) return;
+
+    // Create container for raining artists (behind the game card)
+    let rainContainer = document.getElementById('rain-container');
+    if (!rainContainer) {
+        rainContainer = document.createElement('div');
+        rainContainer.id = 'rain-container';
+        rainContainer.className = 'rain-container';
+        phaseGameOver.insertBefore(rainContainer, phaseGameOver.firstChild);
+    }
+
+    // Clear any existing rain
+    rainContainer.innerHTML = '';
+
+    // Show 8-12 falling artists at a time
+    const artistCount = Math.min(12, Math.max(8, allCorrectArtists.length));
+
+    for (let i = 0; i < artistCount; i++) {
+        // Pick a random artist from correct answers
+        const artist = allCorrectArtists[Math.floor(Math.random() * allCorrectArtists.length)];
+
+        const img = document.createElement('img');
+        img.src = artist.image;
+        img.alt = artist.name;
+        img.className = 'rain-artist';
+
+        // Random horizontal position (0-100%)
+        const xPos = Math.random() * 100;
+        img.style.left = `${xPos}%`;
+
+        // Random animation duration (8-15 seconds for variety)
+        const duration = 8 + Math.random() * 7;
+        img.style.animationDuration = `${duration}s`;
+
+        // Random delay to stagger the start (0-5 seconds)
+        const delay = Math.random() * 5;
+        img.style.animationDelay = `${delay}s`;
+
+        // Random size variation (40-80px)
+        const size = 40 + Math.random() * 40;
+        img.style.width = `${size}px`;
+        img.style.height = `${size}px`;
+
+        rainContainer.appendChild(img);
+    }
 }
 
 /**
