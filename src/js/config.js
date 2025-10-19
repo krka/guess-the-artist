@@ -22,8 +22,9 @@ const SPOTIFY_CONFIG = {
         const pathname = window.location.pathname;
 
         // For localhost/127.0.0.1, just return origin
+        // Use 127.0.0.1 instead of localhost for better Spotify compatibility
         if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-            return origin;
+            return origin.replace('localhost', '127.0.0.1');
         }
 
         // For GitHub Pages, return origin + base path (without index.html)
