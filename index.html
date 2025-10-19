@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guess the Artist</title>
-    <link rel="stylesheet" href="v/724482e/src/css/styles.css">
+    <link rel="stylesheet" href="v/5e7d82b/src/css/styles.css">
 </head>
 <body>
     <div class="container">
@@ -51,22 +51,13 @@
                     <div class="tab-content">
                         <!-- Tab 1: Teams -->
                         <div class="tab-pane active" id="tab-teams">
-                            <div class="add-team-form">
-                                <label for="new-team-players">Players:</label>
-                                <div class="add-team-controls">
-                                    <input
-                                        type="text"
-                                        id="new-team-players"
-                                        class="team-input"
-                                        placeholder="e.g., Alice Bob or Alice, Bob"
-                                    />
-                                    <button id="add-team-button" class="btn-secondary">Add Team</button>
-                                </div>
-                            </div>
-
                             <div id="teams-list" class="teams-list">
                                 <!-- Teams will be dynamically added here -->
                             </div>
+
+                            <button id="add-team-button" class="btn-secondary" style="margin-top: 15px;">
+                                + New Team
+                            </button>
                         </div>
 
                         <!-- Tab 2: Artist Sources -->
@@ -174,8 +165,8 @@
     </div>
 
     <!-- Load scripts in order -->
-    <script src="v/724482e/src/js/config.js"></script>
-    <script src="v/724482e/src/js/spotify-client.js"></script>
-    <script src="v/724482e/src/js/game-setup.js"></script>
+    <script src="v/5e7d82b/src/js/config.js"></script>
+    <script src="v/5e7d82b/src/js/spotify-client.js"></script>
+    <script src="v/5e7d82b/src/js/game-setup.js"></script>
 </body>
 </html>
