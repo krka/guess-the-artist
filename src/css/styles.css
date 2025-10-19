@@ -875,6 +875,12 @@ select:focus {
     width: 100%;
 }
 
+/* Content inside game-card needs to be above rain */
+.game-card > * {
+    position: relative;
+    z-index: 10;
+}
+
 /* Timer Section */
 .timer-section {
     margin-bottom: 30px;
@@ -1332,14 +1338,14 @@ select:focus {
    =================================== */
 
 .rain-container {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     overflow: hidden;
     pointer-events: none;
-    z-index: 0;
+    z-index: 5;
 }
 
 .rain-artist {

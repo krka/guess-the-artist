@@ -472,9 +472,45 @@ class SpotifyClient {
     }
 
     /**
+     * Search for public playlists
+     */
+    async searchPlaylists(query, limit = 20) {
+        await this.ensureAuthenticated();
+
+        try {
+            const url = `${this.config.apiBaseUrl}/search?q=${encodeURIComponent(query)}&type=playlist&limit=${limit}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to search playlists: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            // Filter out null entries that Spotify sometimes returns
+            return data.playlists.items
+                .filter(playlist => playlist !== null)
+                .map(playlist => ({
+                    id: playlist.id,
+                    name: playlist.name,
+                    owner: playlist.owner.display_name,
+                    trackCount: playlist.tracks.total,
+                    image: playlist.images[0]?.url || null,
+                }));
+        } catch (error) {
+            console.error('Error searching playlists:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Get artists from a playlist
      */
-    async getArtistsFromPlaylist(playlistId) {
+    async getArtistsFromPlaylist(playlistId, progressCallback) {
         await this.ensureAuthenticated();
 
         const artistsMap = new Map();
@@ -482,8 +518,14 @@ class SpotifyClient {
         try {
             // Fetch all tracks from playlist (might need pagination)
             let url = `${this.config.apiBaseUrl}/playlists/${playlistId}/tracks?limit=100`;
+            let pageNum = 0;
 
             while (url) {
+                pageNum++;
+                if (progressCallback) {
+                    progressCallback(`Fetching tracks (page ${pageNum})...`);
+                }
+
                 const response = await fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${this.accessToken}`,
@@ -517,9 +559,15 @@ class SpotifyClient {
             // Fetch full artist details for each unique artist
             const artistIds = Array.from(artistsMap.keys());
             const artists = [];
+            const totalBatches = Math.ceil(artistIds.length / 50);
 
             // Fetch in batches of 50 (Spotify API limit)
             for (let i = 0; i < artistIds.length; i += 50) {
+                const batchNum = Math.floor(i / 50) + 1;
+                if (progressCallback) {
+                    progressCallback(`Fetching artist details (${batchNum}/${totalBatches})...`);
+                }
+
                 const batch = artistIds.slice(i, i + 50);
                 const batchUrl = `${this.config.apiBaseUrl}/artists?ids=${batch.join(',')}`;
 
@@ -559,11 +607,21 @@ class SpotifyClient {
     /**
      * Get artists from multiple playlists
      */
-    async getArtistsFromPlaylists(playlistIds) {
+    async getArtistsFromPlaylists(playlistIds, progressCallback) {
         const artistsMap = new Map();
 
-        for (const playlistId of playlistIds) {
-            const artists = await this.getArtistsFromPlaylist(playlistId);
+        for (let i = 0; i < playlistIds.length; i++) {
+            const playlistId = playlistIds[i];
+            const playlistNum = i + 1;
+            const totalPlaylists = playlistIds.length;
+
+            const playlistProgress = (detail) => {
+                if (progressCallback) {
+                    progressCallback(`Playlist ${playlistNum}/${totalPlaylists}: ${detail}`);
+                }
+            };
+
+            const artists = await this.getArtistsFromPlaylist(playlistId, playlistProgress);
             artists.forEach(artist => {
                 if (!artistsMap.has(artist.id)) {
                     artistsMap.set(artist.id, artist);

@@ -394,6 +394,11 @@ select:focus {
     border-radius: var(--border-radius);
     margin-bottom: 15px;
     border: 1px solid #404040;
+    transition: opacity 0.3s ease;
+}
+
+.team-card.disabled {
+    opacity: 0.5;
 }
 
 .team-header {
@@ -401,6 +406,20 @@ select:focus {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    gap: 10px;
+}
+
+.team-checkbox-label {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.team-checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
 }
 
 .team-name-input {
@@ -471,6 +490,77 @@ select:focus {
     font-size: 0.85rem;
     color: #b3b3b3;
     font-style: italic;
+}
+
+/* Team Row (Simplified) */
+.team-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: var(--secondary-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+    border: 1px solid #404040;
+    transition: opacity 0.3s ease;
+}
+
+.team-row.disabled {
+    opacity: 0.5;
+}
+
+.btn-remove-inline {
+    background-color: transparent;
+    border: 1px solid #404040;
+    color: #e74c3c;
+    font-size: 1.2rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.btn-remove-inline:hover {
+    background-color: #e74c3c;
+    color: var(--text-color);
+    border-color: #e74c3c;
+}
+
+.team-checkbox-inline {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.team-checkbox-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.team-members-input {
+    flex: 1;
+    padding: 8px;
+    background-color: var(--card-bg);
+    border: 1px solid #404040;
+    border-radius: var(--border-radius);
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.team-members-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.team-members-input::placeholder {
+    color: #666;
 }
 
 /* Game Settings */
@@ -590,19 +680,19 @@ select:focus {
     margin-top: 10px;
 }
 
-/* Magic Source Items */
-.playlist-item.magic-source {
-    background-color: rgba(29, 185, 84, 0.1);
-    border: 1px solid rgba(29, 185, 84, 0.3);
+/* Search Container */
+.search-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
-.playlist-item.magic-source:hover {
-    background-color: rgba(29, 185, 84, 0.15);
+.search-container input {
+    flex: 1;
 }
 
-.selected-playlist-item.magic-source {
-    background-color: rgba(29, 185, 84, 0.15);
-    border: 1px solid rgba(29, 185, 84, 0.4);
+.search-container button {
+    flex-shrink: 0;
 }
 
 /* Source Separator */
@@ -770,16 +860,25 @@ select:focus {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .game-card {
     background-color: var(--card-bg);
     padding: 40px;
     border-radius: var(--border-radius);
+    position: relative;
+    z-index: 1;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     text-align: center;
     max-width: 800px;
     width: 100%;
+}
+
+/* Content inside game-card needs to be above rain */
+.game-card > * {
+    position: relative;
+    z-index: 10;
 }
 
 /* Timer Section */
@@ -895,6 +994,99 @@ select:focus {
     font-size: 1.3rem;
     margin-bottom: 15px;
     color: var(--text-color);
+}
+
+/* Round Stats */
+.round-stats {
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+}
+
+/* Stat Bar Chart */
+.stat-bar-chart {
+    margin-bottom: 20px;
+}
+
+.stat-bar {
+    margin-bottom: 15px;
+}
+
+.stat-bar-label {
+    font-size: 0.9rem;
+    color: #b3b3b3;
+    margin-bottom: 5px;
+}
+
+.stat-bar-container {
+    position: relative;
+    background-color: var(--card-bg);
+    height: 40px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    border-radius: var(--border-radius);
+}
+
+.stat-bar-fill.correct {
+    background-color: var(--primary-color);
+}
+
+.stat-bar-fill.passed {
+    background-color: #f39c12;
+}
+
+.stat-bar-value {
+    position: absolute;
+    right: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-color);
+    z-index: 1;
+}
+
+/* Round Streak Display */
+.round-streak {
+    background-color: rgba(29, 185, 84, 0.1);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.streak-header {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.streak-artists-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.streak-artist-thumb {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.streak-more-inline {
+    color: #b3b3b3;
+    font-size: 0.9rem;
+    font-style: italic;
 }
 
 .summary-stat strong {
@@ -1017,6 +1209,29 @@ select:focus {
     font-weight: bold;
 }
 
+.streak-artists {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.streak-artist-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.streak-more {
+    color: #b3b3b3;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
 @media (max-width: 768px) {
     body {
         padding: 10px;
@@ -1115,5 +1330,41 @@ select:focus {
         flex-direction: column;
         gap: 8px;
         font-size: 1rem;
+    }
+}
+
+/* ===================================
+   Raining Artists Animation (Game Over)
+   =================================== */
+
+.rain-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.rain-artist {
+    position: absolute;
+    top: -100px;
+    opacity: 0.3;
+    border-radius: 50%;
+    object-fit: cover;
+    animation: fall linear infinite;
+    pointer-events: none;
+}
+
+@keyframes fall {
+    0% {
+        top: -100px;
+        transform: rotate(0deg);
+    }
+    100% {
+        top: 100vh;
+        transform: rotate(360deg);
     }
 }

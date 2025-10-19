@@ -264,6 +264,9 @@ function showReadyPhase() {
     hideAllPhases();
     phaseReady.classList.remove('hidden');
 
+    // Clear any lingering status messages
+    statusMessage.classList.add('hidden');
+
     const team = gameConfig.teams[gameState.currentTeamIndex];
 
     console.log('showReadyPhase - gameConfig:', gameConfig);
@@ -705,37 +708,40 @@ function showGameOver() {
  * Create raining artists background animation
  */
 function createRainingArtists() {
-    // Collect all correct guesses from all players
-    const allCorrectArtists = [];
+    // Collect all unique correct guesses from all players
+    const artistsMap = new Map();
     Object.values(gameState.playerStats).forEach(stats => {
         stats.guesses.forEach(guess => {
             if (guess.wasCorrect && guess.artist.image) {
-                allCorrectArtists.push(guess.artist);
+                artistsMap.set(guess.artist.id, guess.artist);
             }
         });
     });
 
-    // If no correct answers, nothing to animate
-    if (allCorrectArtists.length === 0) return;
+    const uniqueArtists = Array.from(artistsMap.values());
 
-    // Create container for raining artists (behind the game card)
+    // If no correct answers, nothing to animate
+    if (uniqueArtists.length === 0) return;
+
+    // Create container for raining artists (fixed to viewport, behind content)
     let rainContainer = document.getElementById('rain-container');
     if (!rainContainer) {
         rainContainer = document.createElement('div');
         rainContainer.id = 'rain-container';
         rainContainer.className = 'rain-container';
-        phaseGameOver.insertBefore(rainContainer, phaseGameOver.firstChild);
+        document.body.appendChild(rainContainer);
     }
 
     // Clear any existing rain
     rainContainer.innerHTML = '';
 
-    // Show 8-12 falling artists at a time
-    const artistCount = Math.min(12, Math.max(8, allCorrectArtists.length));
+    // Shuffle and take up to 12 unique artists
+    shuffleArray(uniqueArtists);
+    const artistCount = Math.min(12, uniqueArtists.length);
 
     for (let i = 0; i < artistCount; i++) {
-        // Pick a random artist from correct answers
-        const artist = allCorrectArtists[Math.floor(Math.random() * allCorrectArtists.length)];
+        // Take the i-th unique artist (no duplicates)
+        const artist = uniqueArtists[i];
 
         const img = document.createElement('img');
         img.src = artist.image;
@@ -746,8 +752,8 @@ function createRainingArtists() {
         const xPos = Math.random() * 100;
         img.style.left = `${xPos}%`;
 
-        // Random animation duration (8-15 seconds for variety)
-        const duration = 8 + Math.random() * 7;
+        // Random animation duration (5-20 seconds for more variety)
+        const duration = 5 + Math.random() * 15;
         img.style.animationDuration = `${duration}s`;
 
         // Random delay to stagger the start (0-5 seconds)
