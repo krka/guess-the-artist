@@ -52,13 +52,13 @@
                         <!-- Tab 1: Teams -->
                         <div class="tab-pane active" id="tab-teams">
                             <div class="add-team-form">
-                                <label for="new-team-players">Players (comma-separated):</label>
+                                <label for="new-team-players">Players:</label>
                                 <div class="add-team-controls">
                                     <input
                                         type="text"
                                         id="new-team-players"
                                         class="team-input"
-                                        placeholder="e.g., Alice, Bob"
+                                        placeholder="e.g., Alice Bob or Alice, Bob"
                                     />
                                     <button id="add-team-button" class="btn-secondary">Add Team</button>
                                 </div>
@@ -71,29 +71,52 @@
 
                         <!-- Tab 2: Artist Sources -->
                         <div class="tab-pane" id="tab-sources">
-                            <div class="input-group">
-                                <label>Select Artist Sources:</label>
-
-                                <!-- Search/Filter -->
-                                <input
-                                    type="text"
-                                    id="playlist-filter"
-                                    class="playlist-filter"
-                                    placeholder="Search sources..."
-                                />
-
-                                <!-- Available Sources (magic entries + playlists) -->
-                                <div id="playlists-loading" class="loading-message">Loading sources...</div>
-                                <div id="playlists-list" class="playlists-list hidden">
-                                    <!-- Magic entries and playlists will be dynamically added here -->
+                            <!-- Selected Sources (always visible) -->
+                            <div id="selected-playlists-section" class="hidden" style="margin-bottom: 20px;">
+                                <label class="selected-label">Selected Sources:</label>
+                                <div id="selected-playlists-list" class="selected-playlists-list">
+                                    <!-- Selected sources will be dynamically added here -->
                                 </div>
-                                <div id="playlists-empty" class="empty-state hidden">No sources found</div>
+                            </div>
 
-                                <!-- Selected Sources -->
-                                <div id="selected-playlists-section" class="hidden">
-                                    <label class="selected-label">Selected Sources:</label>
-                                    <div id="selected-playlists-list" class="selected-playlists-list">
-                                        <!-- Selected sources will be dynamically added here -->
+                            <div class="input-group">
+                                <label>Browse Sources:</label>
+
+                                <!-- Inner Tab Navigation -->
+                                <div class="inner-tab-nav">
+                                    <button class="inner-tab-button active" data-inner-tab="magic" onclick="switchInnerTab('magic')">
+                                        Magic Sources
+                                    </button>
+                                    <button class="inner-tab-button" data-inner-tab="playlists" onclick="switchInnerTab('playlists')">
+                                        Your Playlists
+                                    </button>
+                                </div>
+
+                                <!-- Inner Tab Content -->
+                                <div class="inner-tab-content">
+                                    <!-- Magic Sources -->
+                                    <div class="inner-tab-pane active" id="inner-tab-magic">
+                                        <div id="magic-sources-list" class="playlists-list">
+                                            <!-- Magic sources will be dynamically added here -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Playlists -->
+                                    <div class="inner-tab-pane" id="inner-tab-playlists">
+                                        <!-- Search/Filter -->
+                                        <input
+                                            type="text"
+                                            id="playlist-filter"
+                                            class="playlist-filter"
+                                            placeholder="Search playlists..."
+                                        />
+
+                                        <!-- Available Playlists -->
+                                        <div id="playlists-loading" class="loading-message">Loading playlists...</div>
+                                        <div id="playlists-list" class="playlists-list hidden">
+                                            <!-- Playlists will be dynamically added here -->
+                                        </div>
+                                        <div id="playlists-empty" class="empty-state hidden">No playlists found</div>
                                     </div>
                                 </div>
                             </div>
