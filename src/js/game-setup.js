@@ -6,20 +6,8 @@
 let spotifyClient = null;
 let teams = [];
 let userPlaylists = [];
+let previouslyUsedPlaylists = [];
 let selectedPlaylistIds = [];
-
-// Magic source entries (always available)
-const MAGIC_SOURCES = [
-    { id: '__top_artists__', name: 'My Top Artists', info: 'Based on your listening history' },
-    { id: '__related_artists__', name: 'Related Artists', info: 'Artists similar to your favorites' },
-    { id: '__decade_1960s__', name: 'Best of 1960s', info: 'Classic artists from the 60s' },
-    { id: '__decade_1970s__', name: 'Best of 1970s', info: 'Classic artists from the 70s' },
-    { id: '__decade_1980s__', name: 'Best of 1980s', info: 'Classic artists from the 80s' },
-    { id: '__decade_1990s__', name: 'Best of 1990s', info: 'Classic artists from the 90s' },
-    { id: '__decade_2000s__', name: 'Best of 2000s', info: 'Popular artists from the 2000s' },
-    { id: '__decade_2010s__', name: 'Best of 2010s', info: 'Popular artists from the 2010s' },
-    { id: '__decade_2020s__', name: 'Best of 2020s', info: 'Current popular artists' }
-];
 
 // DOM Elements
 const authSection = document.getElementById('auth-section');
@@ -92,16 +80,6 @@ function setupEventListeners() {
     addTeamButton.addEventListener('click', addTeam);
     startGameButton.addEventListener('click', startGame);
 
-    // Add team on Enter key
-    const newTeamPlayersInput = document.getElementById('new-team-players');
-    if (newTeamPlayersInput) {
-        newTeamPlayersInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                addTeam();
-            }
-        });
-    }
-
     // Filter playlists as user types
     if (playlistFilter) {
         playlistFilter.addEventListener('input', (e) => {
@@ -109,12 +87,43 @@ function setupEventListeners() {
         });
     }
 
-    // Update popularity value display
+    // Update popularity value display and save settings
     const minPopularitySlider = document.getElementById('min-popularity');
     const popularityValueDisplay = document.getElementById('popularity-value');
     if (minPopularitySlider && popularityValueDisplay) {
         minPopularitySlider.addEventListener('input', (e) => {
             popularityValueDisplay.textContent = e.target.value;
+        });
+        minPopularitySlider.addEventListener('change', saveState);
+    }
+
+    // Save settings when changed
+    const roundDurationInput = document.getElementById('round-duration');
+    if (roundDurationInput) {
+        roundDurationInput.addEventListener('change', saveState);
+    }
+
+    const timeRangeSelect = document.getElementById('time-range');
+    if (timeRangeSelect) {
+        timeRangeSelect.addEventListener('change', saveState);
+    }
+
+    const gameModeSelect = document.getElementById('game-mode');
+    if (gameModeSelect) {
+        gameModeSelect.addEventListener('change', saveState);
+    }
+
+    // Search playlists
+    const searchButton = document.getElementById('playlist-search-button');
+    const searchInput = document.getElementById('playlist-search-input');
+    if (searchButton) {
+        searchButton.addEventListener('click', searchPlaylists);
+    }
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchPlaylists();
+            }
         });
     }
 }
@@ -193,6 +202,29 @@ function restoreSavedState() {
             selectedPlaylistIds = JSON.parse(savedPlaylists);
             console.log('Restored selected playlists:', selectedPlaylistIds);
         }
+
+        // Restore previously used playlists
+        loadPreviouslyUsedPlaylists();
+
+        // Restore game settings
+        const savedSettings = localStorage.getItem('savedSettings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (settings.roundDuration !== undefined) {
+                document.getElementById('round-duration').value = settings.roundDuration;
+            }
+            if (settings.timeRange !== undefined) {
+                document.getElementById('time-range').value = settings.timeRange;
+            }
+            if (settings.minPopularity !== undefined) {
+                document.getElementById('min-popularity').value = settings.minPopularity;
+                document.getElementById('popularity-value').textContent = settings.minPopularity;
+            }
+            if (settings.gameMode !== undefined) {
+                document.getElementById('game-mode').value = settings.gameMode;
+            }
+            console.log('Restored settings:', settings);
+        }
     } catch (error) {
         console.error('Failed to restore saved state:', error);
     }
@@ -205,6 +237,15 @@ function saveState() {
     try {
         localStorage.setItem('savedTeams', JSON.stringify(teams));
         localStorage.setItem('savedPlaylists', JSON.stringify(selectedPlaylistIds));
+
+        // Save game settings
+        const settings = {
+            roundDuration: parseInt(document.getElementById('round-duration').value),
+            timeRange: document.getElementById('time-range').value,
+            minPopularity: parseInt(document.getElementById('min-popularity').value),
+            gameMode: document.getElementById('game-mode').value
+        };
+        localStorage.setItem('savedSettings', JSON.stringify(settings));
     } catch (error) {
         console.error('Failed to save state:', error);
     }
@@ -222,31 +263,12 @@ function showLoginUI() {
  * Add a new team
  */
 function addTeam() {
-    const newTeamPlayersInput = document.getElementById('new-team-players');
-    const playersText = newTeamPlayersInput.value.trim();
-
-    if (!playersText) {
-        showStatus('Please enter player names', 'error');
-        return;
-    }
-
-    // Parse players - use comma if present, otherwise space
-    const separator = playersText.includes(',') ? ',' : ' ';
-    const members = playersText
-        .split(separator)
-        .map(m => m.trim())
-        .filter(m => m.length > 0);
-
-    if (members.length < 2) {
-        showStatus('A team needs at least 2 players', 'error');
-        return;
-    }
-
     const teamNumber = teams.length + 1;
     const team = {
         id: `team-${Date.now()}`,
         name: `Team ${teamNumber}`,
-        members: members
+        members: [],
+        enabled: true
     };
 
     teams.push(team);
@@ -254,9 +276,13 @@ function addTeam() {
     updateStartButtonState();
     saveState();
 
-    // Clear input
-    newTeamPlayersInput.value = '';
-    showStatus(`Team ${teamNumber} added with ${members.length} players!`, 'success');
+    // Focus on the new team's input
+    setTimeout(() => {
+        const newTeamInput = document.querySelector(`[data-team-id="${team.id}"] .team-members-input`);
+        if (newTeamInput) {
+            newTeamInput.focus();
+        }
+    }, 50);
 }
 
 /**
@@ -275,11 +301,20 @@ function removeTeam(teamId) {
 function updateTeamMembers(teamId, membersText) {
     const team = teams.find(t => t.id === teamId);
     if (team) {
-        // Split by comma and trim whitespace
-        team.members = membersText
-            .split(',')
-            .map(m => m.trim())
-            .filter(m => m.length > 0);
+        // Split by comma if present, otherwise by whitespace for simple names
+        if (membersText.includes(',')) {
+            // Comma-separated: split by comma, trim each part
+            team.members = membersText
+                .split(',')
+                .map(m => m.trim())
+                .filter(m => m.length > 0);
+        } else {
+            // Space-separated: split by any whitespace, trim and filter
+            team.members = membersText
+                .trim()
+                .split(/\s+/)
+                .filter(m => m.length > 0);
+        }
         updateStartButtonState();
         saveState();
     }
@@ -290,48 +325,45 @@ function updateTeamMembers(teamId, membersText) {
  */
 function renderTeams() {
     if (teams.length === 0) {
-        teamsList.innerHTML = '<p class="empty-state">No teams yet. Click "+ Add Team" to get started!</p>';
+        teamsList.innerHTML = '<p class="empty-state">No teams yet. Click "+ New Team" to get started!</p>';
         return;
     }
 
     teamsList.innerHTML = teams.map(team => `
-        <div class="team-card" data-team-id="${team.id}">
-            <div class="team-header">
+        <div class="team-row ${team.enabled === false ? 'disabled' : ''}" data-team-id="${team.id}">
+            <button
+                class="btn-remove-inline"
+                onclick="removeTeam('${team.id}')"
+                title="Remove team"
+            >×</button>
+            <label class="team-checkbox-inline">
                 <input
-                    type="text"
-                    class="team-name-input"
-                    value="${team.name}"
-                    onchange="updateTeamName('${team.id}', this.value)"
-                    placeholder="Team name"
+                    type="checkbox"
+                    ${team.enabled !== false ? 'checked' : ''}
+                    onchange="toggleTeam('${team.id}', this.checked)"
+                    title="Enable/disable team"
                 />
-                <button
-                    class="btn-remove"
-                    onclick="removeTeam('${team.id}')"
-                    title="Remove team"
-                >×</button>
-            </div>
-            <div class="team-members">
-                <label>Players (comma-separated):</label>
-                <input
-                    type="text"
-                    class="members-input"
-                    value="${team.members.join(', ')}"
-                    onchange="updateTeamMembers('${team.id}', this.value)"
-                    placeholder="e.g., Alice, Bob"
-                />
-                <div class="member-count">${team.members.length} player${team.members.length === 1 ? '' : 's'}</div>
-            </div>
+            </label>
+            <input
+                type="text"
+                class="team-members-input"
+                value="${team.members.join(', ')}"
+                oninput="updateTeamMembers('${team.id}', this.value)"
+                placeholder="Player names (e.g., Alice Bob or Alice, Bob)"
+            />
         </div>
     `).join('');
 }
 
 /**
- * Update team name
+ * Toggle team enabled/disabled
  */
-function updateTeamName(teamId, newName) {
+function toggleTeam(teamId, enabled) {
     const team = teams.find(t => t.id === teamId);
     if (team) {
-        team.name = newName.trim() || `Team ${teams.indexOf(team) + 1}`;
+        team.enabled = enabled;
+        renderTeams();
+        updateStartButtonState();
         saveState();
     }
 }
@@ -340,13 +372,26 @@ function updateTeamName(teamId, newName) {
  * Update start button state
  */
 function updateStartButtonState() {
-    // Enable start button if at least one team has at least 2 members
-    const hasValidTeam = teams.some(team => team.members.length >= 2);
-    startGameButton.disabled = !hasValidTeam;
+    // Enable start button if at least one enabled, non-empty team has at least 2 members
+    const validTeams = teams.filter(team =>
+        team.enabled !== false &&
+        team.members.length >= 2
+    );
 
-    if (!hasValidTeam && teams.length > 0) {
-        startGameButton.title = 'Each team needs at least 2 players';
+    startGameButton.disabled = validTeams.length === 0;
+
+    // Update button text to show team count
+    if (validTeams.length === 0) {
+        startGameButton.textContent = 'Start Game';
+        const enabledTeams = teams.filter(team => team.enabled !== false);
+        if (enabledTeams.length === 0) {
+            startGameButton.title = 'Enable at least one team to start';
+        } else {
+            startGameButton.title = 'Each enabled team needs at least 2 players';
+        }
     } else {
+        const teamText = validTeams.length === 1 ? 'team' : 'teams';
+        startGameButton.textContent = `Start Game (${validTeams.length} ${teamText})`;
         startGameButton.title = '';
     }
 }
@@ -357,9 +402,9 @@ function updateStartButtonState() {
 async function loadPlaylists() {
     if (userPlaylists.length > 0) {
         // Already loaded, just render
-        renderMagicSources();
         renderPlaylists();
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
         return;
     }
 
@@ -370,10 +415,9 @@ async function loadPlaylists() {
     try {
         userPlaylists = await spotifyClient.getUserPlaylists();
 
-        // Always render - magic sources are always available
-        renderMagicSources();
         renderPlaylists();
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
         playlistsLoading.classList.add('hidden');
         playlistsList.classList.remove('hidden');
     } catch (error) {
@@ -386,15 +430,13 @@ async function loadPlaylists() {
         } else if (error.message.includes('403')) {
             errorMsg += 'Permission denied. Please re-authorize the app.';
         } else {
-            errorMsg += 'You can still use Magic Sources (My Top Artists, Decades, Related Artists).';
+            errorMsg += 'Please try again later.';
         }
 
         showStatus(errorMsg, 'error');
         playlistsLoading.classList.add('hidden');
-
-        // Still show magic sources even if playlists fail
-        renderMagicSources();
         renderPlaylists();
+        renderPreviouslyUsed();
         playlistsList.classList.remove('hidden');
     }
 }
@@ -403,43 +445,7 @@ async function loadPlaylists() {
  * Filter playlists based on search query
  */
 function filterPlaylists(query) {
-    // Note: Only filters playlists, not magic sources
-    // Magic sources are in a separate tab
     renderPlaylists(query);
-}
-
-/**
- * Render available magic sources (not selected)
- */
-function renderMagicSources(filterQuery = '') {
-    const query = filterQuery.toLowerCase();
-    const magicSourcesList = document.getElementById('magic-sources-list');
-
-    const availableMagicSources = MAGIC_SOURCES.filter(source => {
-        const matchesFilter = source.name.toLowerCase().includes(query);
-        const notSelected = !selectedPlaylistIds.includes(source.id);
-        return matchesFilter && notSelected;
-    });
-
-    if (availableMagicSources.length === 0) {
-        magicSourcesList.innerHTML = '<div class="empty-state">No magic sources found</div>';
-        return;
-    }
-
-    const html = availableMagicSources.map(source => `
-        <div class="playlist-item magic-source">
-            <div class="playlist-item-content">
-                <span class="playlist-name">${source.name}</span>
-                <span class="playlist-info">${source.info}</span>
-            </div>
-            <button
-                class="btn-add-playlist"
-                onclick="addPlaylist('${source.id}')"
-            >Add</button>
-        </div>
-    `).join('');
-
-    magicSourcesList.innerHTML = html;
 }
 
 /**
@@ -478,7 +484,7 @@ function renderPlaylists(filterQuery = '') {
 }
 
 /**
- * Render selected sources (magic sources + playlists)
+ * Render selected playlists
  */
 function renderSelectedPlaylists() {
     if (selectedPlaylistIds.length === 0) {
@@ -490,33 +496,33 @@ function renderSelectedPlaylists() {
 
     let html = '';
 
-    // Render selected sources in order
+    // Render selected playlists in order
     selectedPlaylistIds.forEach(id => {
-        // Check if it's a magic source
-        const magicSource = MAGIC_SOURCES.find(s => s.id === id);
-        if (magicSource) {
+        // Check user playlists first
+        const playlist = userPlaylists.find(p => p.id === id);
+        if (playlist) {
             html += `
-                <div class="selected-playlist-item magic-source">
-                    <span class="playlist-name">${magicSource.name}</span>
-                    <span class="playlist-info">${magicSource.info}</span>
+                <div class="selected-playlist-item">
+                    <span class="playlist-name">${playlist.name}</span>
+                    <span class="playlist-info">${playlist.trackCount} tracks</span>
                     <button
                         class="btn-remove-playlist"
-                        onclick="removePlaylist('${magicSource.id}')"
-                        title="Remove source"
+                        onclick="removePlaylist('${playlist.id}')"
+                        title="Remove playlist"
                     >×</button>
                 </div>
             `;
         } else {
-            // It's a regular playlist
-            const playlist = userPlaylists.find(p => p.id === id);
-            if (playlist) {
+            // Check previously used playlists
+            const prevPlaylist = previouslyUsedPlaylists.find(p => p.id === id);
+            if (prevPlaylist) {
                 html += `
                     <div class="selected-playlist-item">
-                        <span class="playlist-name">${playlist.name}</span>
-                        <span class="playlist-info">${playlist.trackCount} tracks</span>
+                        <span class="playlist-name">${prevPlaylist.name}</span>
+                        <span class="playlist-info">${prevPlaylist.trackCount} tracks • by ${prevPlaylist.owner}</span>
                         <button
                             class="btn-remove-playlist"
-                            onclick="removePlaylist('${playlist.id}')"
+                            onclick="removePlaylist('${prevPlaylist.id}')"
                             title="Remove playlist"
                         >×</button>
                     </div>
@@ -531,14 +537,23 @@ function renderSelectedPlaylists() {
 /**
  * Add playlist to selection
  */
-function addPlaylist(playlistId) {
+function addPlaylist(playlistId, playlistData = null) {
     if (!selectedPlaylistIds.includes(playlistId)) {
         selectedPlaylistIds.push(playlistId);
 
+        // If this is a public playlist (has playlistData), save it to previously used
+        if (playlistData && !userPlaylists.find(p => p.id === playlistId)) {
+            // Add to previously used if not already there
+            if (!previouslyUsedPlaylists.find(p => p.id === playlistId)) {
+                previouslyUsedPlaylists.push(playlistData);
+                savePreviouslyUsedPlaylists();
+            }
+        }
+
         const currentFilter = playlistFilter ? playlistFilter.value : '';
-        renderMagicSources(currentFilter);
         renderPlaylists(currentFilter);
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
 
         // If filter resulted in empty view, clear it
         if (currentFilter && playlistsList.querySelector('.empty-state')) {
@@ -561,11 +576,138 @@ function removePlaylist(playlistId) {
     if (index !== -1) {
         selectedPlaylistIds.splice(index, 1);
         const currentFilter = playlistFilter ? playlistFilter.value : '';
-        renderMagicSources(currentFilter);
         renderPlaylists(currentFilter);
         renderSelectedPlaylists();
+        renderPreviouslyUsed();
         saveState();
         console.log('Removed playlist:', playlistId);
+    }
+}
+
+/**
+ * Search for playlists
+ */
+async function searchPlaylists() {
+    const searchInput = document.getElementById('playlist-search-input');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchResultsLoading = document.getElementById('search-results-loading');
+    const query = searchInput.value.trim();
+
+    if (!query) {
+        searchResultsList.innerHTML = '<div class="empty-state">Enter a search term to find playlists</div>';
+        return;
+    }
+
+    searchResultsLoading.classList.remove('hidden');
+    searchResultsList.innerHTML = '';
+
+    try {
+        const results = await spotifyClient.searchPlaylists(query);
+
+        searchResultsLoading.classList.add('hidden');
+
+        if (results.length === 0) {
+            searchResultsList.innerHTML = '<div class="empty-state">No playlists found</div>';
+            return;
+        }
+
+        // Filter out already selected playlists
+        const availableResults = results.filter(p => !selectedPlaylistIds.includes(p.id));
+
+        if (availableResults.length === 0) {
+            searchResultsList.innerHTML = '<div class="empty-state">All results are already added</div>';
+            return;
+        }
+
+        const html = availableResults.map(playlist => `
+            <div class="playlist-item">
+                <div class="playlist-item-content">
+                    <span class="playlist-name">${playlist.name}</span>
+                    <span class="playlist-info">${playlist.trackCount} tracks • by ${playlist.owner}</span>
+                </div>
+                <button
+                    class="btn-add-playlist"
+                    onclick='addPlaylist("${playlist.id}", ${JSON.stringify(playlist).replace(/'/g, "&#39;")})'
+                >Add</button>
+            </div>
+        `).join('');
+
+        searchResultsList.innerHTML = html;
+    } catch (error) {
+        console.error('Search failed:', error);
+        searchResultsLoading.classList.add('hidden');
+        searchResultsList.innerHTML = '<div class="empty-state">Search failed. Please try again.</div>';
+        showStatus('Failed to search playlists', 'error');
+    }
+}
+
+/**
+ * Render previously used playlists
+ */
+function renderPreviouslyUsed() {
+    const previousPlaylistsList = document.getElementById('previous-playlists-list');
+
+    // Filter out already selected playlists
+    const availablePrevious = previouslyUsedPlaylists.filter(p => !selectedPlaylistIds.includes(p.id));
+
+    if (availablePrevious.length === 0) {
+        previousPlaylistsList.innerHTML = '<div class="empty-state">No previously used playlists</div>';
+        return;
+    }
+
+    const html = availablePrevious.map(playlist => `
+        <div class="playlist-item">
+            <div class="playlist-item-content">
+                <span class="playlist-name">${playlist.name}</span>
+                <span class="playlist-info">${playlist.trackCount} tracks • by ${playlist.owner}</span>
+            </div>
+            <button
+                class="btn-add-playlist"
+                onclick='addPlaylist("${playlist.id}", ${JSON.stringify(playlist).replace(/'/g, "&#39;")})'
+            >Add</button>
+            <button
+                class="btn-remove-inline"
+                onclick="removePreviouslyUsed('${playlist.id}')"
+                title="Remove from history"
+            >×</button>
+        </div>
+    `).join('');
+
+    previousPlaylistsList.innerHTML = html;
+}
+
+/**
+ * Remove a playlist from previously used list
+ */
+function removePreviouslyUsed(playlistId) {
+    previouslyUsedPlaylists = previouslyUsedPlaylists.filter(p => p.id !== playlistId);
+    savePreviouslyUsedPlaylists();
+    renderPreviouslyUsed();
+}
+
+/**
+ * Save previously used playlists to localStorage
+ */
+function savePreviouslyUsedPlaylists() {
+    try {
+        localStorage.setItem('previouslyUsedPlaylists', JSON.stringify(previouslyUsedPlaylists));
+    } catch (error) {
+        console.error('Failed to save previously used playlists:', error);
+    }
+}
+
+/**
+ * Load previously used playlists from localStorage
+ */
+function loadPreviouslyUsedPlaylists() {
+    try {
+        const saved = localStorage.getItem('previouslyUsedPlaylists');
+        if (saved) {
+            previouslyUsedPlaylists = JSON.parse(saved);
+        }
+    } catch (error) {
+        console.error('Failed to load previously used playlists:', error);
+        previouslyUsedPlaylists = [];
     }
 }
 
@@ -576,6 +718,7 @@ async function startGame() {
     const roundDuration = parseInt(document.getElementById('round-duration').value);
     const timeRange = document.getElementById('time-range').value;
     const minPopularity = parseInt(document.getElementById('min-popularity').value);
+    const gameMode = document.getElementById('game-mode').value;
 
     // Validate authentication BEFORE navigating
     try {
@@ -602,40 +745,45 @@ async function startGame() {
         return;
     }
 
-    // Validate at least one source is selected
+    // Validate at least one playlist is selected
     if (selectedPlaylistIds.length === 0) {
-        showStatus('Please select at least one artist source', 'error');
+        showStatus('Please select at least one playlist', 'error');
         return;
     }
 
-    // Separate magic sources from playlist IDs
-    const selectedSources = [];
-    const actualPlaylistIds = [];
+    // Filter to only enabled, non-empty teams with at least 2 players
+    const validTeams = teams.filter(team =>
+        team.enabled !== false &&
+        team.members.length >= 2
+    );
 
-    selectedPlaylistIds.forEach(id => {
-        if (id.startsWith('__')) {
-            // Magic source - pass through the ID as-is
-            selectedSources.push(id);
-        } else {
-            // Regular playlist ID
-            actualPlaylistIds.push(id);
-            if (!selectedSources.includes('__playlists__')) {
-                selectedSources.push('__playlists__');
+    // Warn if any teams were filtered out
+    const filteredOutTeams = teams.filter(team =>
+        team.enabled === false || team.members.length < 2
+    );
+    if (filteredOutTeams.length > 0) {
+        const reasons = filteredOutTeams.map(team => {
+            const teamLabel = team.members.length > 0 ? team.members.join(' & ') : 'Empty team';
+            if (team.enabled === false) {
+                return `${teamLabel}: disabled`;
+            } else if (team.members.length < 2) {
+                return `${teamLabel}: only ${team.members.length} player(s)`;
             }
-        }
-    });
+        }).join(', ');
+        console.warn('Teams excluded from game:', reasons);
+    }
 
-    // Calculate minimum artists needed for the entire game
-    const totalGameSeconds = teams.reduce((total, team) => {
-        return total + roundDuration * team.members.length;
-    }, 0);
+    console.log('Valid teams for game:', validTeams.map(t => `${t.members.join(' & ')} (${t.members.length} players)`).join(', '));
+
+    // Calculate total game time needed
+    const totalPlayerCount = validTeams.reduce((sum, team) => sum + team.members.length, 0);
+    const totalGameSeconds = totalPlayerCount * roundDuration;
 
     const gameConfig = {
-        teams: teams,
-        roundDuration: roundDuration,
-        artistSources: selectedSources,  // Array: ['top_artists', 'playlists', 'genres']
-        playlistIds: actualPlaylistIds,  // Only actual playlist IDs
-        timeRange: timeRange,  // For top artists
+        teams: validTeams,
+        playerDuration: roundDuration,  // Time per player (exactly what's in the setting)
+        gameMode: gameMode,  // 'individual' or 'swap-places'
+        playlistIds: selectedPlaylistIds,  // Selected playlist IDs
         minPopularity: minPopularity,  // Filter out obscure artists
         minArtistsNeeded: totalGameSeconds  // Minimum to avoid running out
     };
@@ -712,8 +860,9 @@ function switchInnerTab(tabName) {
 // Make functions available globally for onclick handlers
 window.removeTeam = removeTeam;
 window.updateTeamMembers = updateTeamMembers;
-window.updateTeamName = updateTeamName;
+window.toggleTeam = toggleTeam;
 window.addPlaylist = addPlaylist;
 window.removePlaylist = removePlaylist;
+window.removePreviouslyUsed = removePreviouslyUsed;
 window.switchTab = switchTab;
 window.switchInnerTab = switchInnerTab;

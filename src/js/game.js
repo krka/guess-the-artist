@@ -13,10 +13,15 @@ let gameState = {
     scores: {}, // teamId -> score
     playerStats: {}, // playerId -> { correct, passed, fastestGuess, currentStreak, bestStreak, guesses: [] }
     roundStartTime: null,
+    currentArtistStartTime: null,
     timerInterval: null,
     remainingTime: 0,
+    initialRoundDuration: 0,  // Track the actual duration for this round (for progress bar)
     phase: 'ready'
 };
+
+// Preloaded images cache
+const preloadedImages = new Map();
 
 // DOM Elements
 const statusMessage = document.getElementById('status-message');
@@ -47,6 +52,18 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     gameConfig = JSON.parse(configJson);
     console.log('Game config loaded:', gameConfig);
+    console.log('Number of teams in game:', gameConfig.teams.length);
+    console.log('Teams:', gameConfig.teams.map(t => formatTeamName(t.members)).join(' | '));
+
+    // Randomize team order
+    shuffleArray(gameConfig.teams);
+
+    // Randomize player order within each team
+    gameConfig.teams.forEach(team => {
+        shuffleArray(team.members);
+    });
+
+    console.log('Teams and players randomized:', gameConfig.teams);
 
     // Validate we're logged in
     if (!spotifyClient.isAuthenticated()) {
@@ -64,12 +81,14 @@ window.addEventListener('DOMContentLoaded', async () => {
             const playerId = `${team.id}-${member}`;
             gameState.playerStats[playerId] = {
                 name: member,
-                teamName: team.name,
+                teamMembers: team.members,
                 correct: 0,
                 passed: 0,
                 fastestGuess: null,
                 currentStreak: 0,
+                currentStreakArtists: [],
                 bestStreak: 0,
+                bestStreakArtists: [],
                 guesses: []
             };
         });
@@ -83,53 +102,50 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Get friendly name for a source
+ * Format team name from member list
+ * Examples: "Alice & Bob", "Alice, Bob & Charlie"
  */
-function getSourceName(source) {
-    if (source === '__top_artists__') return 'My Top Artists';
-    if (source === '__related_artists__') return 'Related Artists';
-    if (source === '__playlists__') return 'Your Playlists';
-    if (source.startsWith('__decade_')) {
-        const decade = source.replace('__decade_', '').replace('__', '');
-        return `Best of ${decade}`;
-    }
-    return source;
+function formatTeamName(members) {
+    if (!members || members.length === 0) return '';
+    if (members.length === 1) return members[0];
+    if (members.length === 2) return `${members[0]} & ${members[1]}`;
+
+    // For 3+: "Alice, Bob & Charlie"
+    const lastMember = members[members.length - 1];
+    const otherMembers = members.slice(0, -1);
+    return `${otherMembers.join(', ')} & ${lastMember}`;
+}
+
+/**
+ * Format teammates for a player (excluding the current player)
+ * Examples: "with Bob", "with Bob & Charlie"
+ */
+function formatTeammates(allMembers, currentPlayer) {
+    const teammates = allMembers.filter(m => m !== currentPlayer);
+    if (teammates.length === 0) return '';
+    if (teammates.length === 1) return `with ${teammates[0]}`;
+    if (teammates.length === 2) return `with ${teammates[0]} & ${teammates[1]}`;
+
+    const lastMember = teammates[teammates.length - 1];
+    const otherMembers = teammates.slice(0, -1);
+    return `with ${otherMembers.join(', ')} & ${lastMember}`;
 }
 
 /**
  * Fetch artists based on game config
  */
 async function fetchArtists() {
-    const totalSources = gameConfig.artistSources.length;
-    let currentSource = 0;
-
     try {
         const artistsMap = new Map();
 
-        // Fetch from each selected source
-        for (const source of gameConfig.artistSources) {
-            currentSource++;
-            const sourceName = getSourceName(source);
-            showStatus(`Loading artists... (${currentSource}/${totalSources}: ${sourceName})`, 'info');
-
-            if (source === '__top_artists__') {
-                const timeRange = gameConfig.timeRange || 'medium_term';
-                const artists = await spotifyClient.getTopArtists(50, timeRange);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__related_artists__') {
-                const artists = await spotifyClient.getRelatedArtists(50);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source.startsWith('__decade_')) {
-                const decade = source.replace('__decade_', '').replace('__', '');
-                const artists = await spotifyClient.getArtistsByDecade(decade, 50);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            } else if (source === '__playlists__') {
-                console.log('Fetching artists from playlists...', gameConfig.playlistIds);
-                const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds);
-                console.log(`Got ${artists.length} artists from playlists`);
-                artists.forEach(artist => artistsMap.set(artist.id, artist));
-            }
-        }
+        // Fetch artists from playlists
+        console.log('Fetching artists from playlists...', gameConfig.playlistIds);
+        const progressCallback = (detail) => {
+            showStatus(`Loading artists from playlists... (${detail})`, 'info');
+        };
+        const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
+        console.log(`Got ${artists.length} artists from playlists`);
+        artists.forEach(artist => artistsMap.set(artist.id, artist));
 
         // Convert to array
         let allArtists = Array.from(artistsMap.values());
@@ -148,21 +164,28 @@ async function fetchArtists() {
             console.log(`Popularity filter: ${beforeFilter} → ${allArtists.length} artists (min popularity: ${minPopularity})`);
         }
 
-        // Calculate max artists needed (total game seconds)
-        const totalGameSeconds = gameConfig.teams.reduce((total, team) => {
-            return total + gameConfig.roundDuration * team.members.length;
-        }, 0);
+        // Calculate artists needed (total game seconds)
+        const artistsNeeded = gameConfig.minArtistsNeeded ||
+            (gameConfig.totalTimePerTeam * gameConfig.teams.length);
 
-        console.log(`Game duration: ${totalGameSeconds}s (max artists needed), available: ${allArtists.length}`);
+        console.log(`Game duration: ${artistsNeeded}s (artists needed), available: ${allArtists.length}`);
 
-        // If we have more artists than needed, keep the most popular ones
-        if (allArtists.length > totalGameSeconds) {
+        // Improved artist selection to avoid repetition across games
+        if (allArtists.length > artistsNeeded) {
+            // Sort by popularity
             allArtists.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-            allArtists = allArtists.slice(0, totalGameSeconds);
-            console.log(`Limited to top ${allArtists.length} most popular artists (based on game duration)`);
+
+            // Calculate how many artists to keep
+            const remaining = allArtists.length - artistsNeeded;
+            const bottomTwentyPercent = Math.floor(remaining * 0.2);
+            const artistsToKeep = allArtists.length - bottomTwentyPercent;
+
+            // Remove the bottom 20% of excess artists (keeps top 80% + all needed)
+            allArtists = allArtists.slice(0, artistsToKeep);
+            console.log(`Artist pool: kept ${artistsToKeep} artists (removed bottom ${bottomTwentyPercent} least popular from ${allArtists.length + bottomTwentyPercent} total)`);
         }
 
-        // Shuffle - use all available artists
+        // Shuffle ALL remaining artists - this provides variety across games
         shuffleArray(allArtists);
         gameState.artists = allArtists;
 
@@ -174,17 +197,16 @@ async function fetchArtists() {
             const debugInfo = {
                 artistsFound: gameState.artists.length,
                 minNeeded: minNeeded,
-                totalGameSeconds: totalGameSeconds,
+                artistsNeeded: artistsNeeded,
                 minPopularity: gameConfig.minPopularity,
-                sources: gameConfig.artistSources,
                 playlistIds: gameConfig.playlistIds,
                 teams: gameConfig.teams.length,
-                roundDuration: gameConfig.roundDuration
+                playerDuration: gameConfig.playerDuration
             };
             console.error('Not enough artists! Debug info:', debugInfo);
 
             showErrorPhase(
-                `Not enough artists!\n\nFound: ${gameState.artists.length} artists\nNeeded: ${minNeeded} artists\n\nPossible fixes:\n• Add more artist sources (playlists, decades, etc.)\n• Lower the popularity filter (currently: ${gameConfig.minPopularity})\n• Reduce round duration (currently: ${gameConfig.roundDuration}s)\n• Use fewer teams (currently: ${gameConfig.teams.length} teams)`,
+                `Not enough artists!\n\nFound: ${gameState.artists.length} artists\nNeeded: ${minNeeded} artists\n\nPossible fixes:\n• Add more playlists\n• Lower the popularity filter (currently: ${gameConfig.minPopularity})\n• Reduce time per player (currently: ${gameConfig.playerDuration}s)\n• Use fewer teams (currently: ${gameConfig.teams.length} teams)`,
                 debugInfo
             );
             return;
@@ -212,6 +234,22 @@ function shuffleArray(array) {
 }
 
 /**
+ * Preload artist images for smooth transitions
+ */
+function preloadImages(startIndex, count = 5) {
+    for (let i = 0; i < count; i++) {
+        const index = (startIndex + i) % gameState.artists.length;
+        const artist = gameState.artists[index];
+
+        if (artist.image && !preloadedImages.has(artist.id)) {
+            const img = new Image();
+            img.src = artist.image;
+            preloadedImages.set(artist.id, img);
+        }
+    }
+}
+
+/**
  * Show ready phase
  */
 function showReadyPhase() {
@@ -219,12 +257,26 @@ function showReadyPhase() {
     phaseReady.classList.remove('hidden');
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
-    const player = team.members[gameState.currentPlayerIndex];
-    const playerDuration = Math.floor(gameConfig.roundDuration / team.members.length);
 
-    document.getElementById('ready-player-name').textContent = player;
-    document.getElementById('ready-team-name').textContent = team.name;
-    document.getElementById('ready-duration').textContent = playerDuration;
+    console.log('showReadyPhase - gameConfig:', gameConfig);
+    console.log('showReadyPhase - playerDuration:', gameConfig.playerDuration);
+
+    if (gameConfig.gameMode === 'swap-places') {
+        // Swap Places mode: show team name and total team duration
+        const teamDuration = gameConfig.playerDuration * team.members.length;
+        document.getElementById('ready-player-name').textContent = formatTeamName(team.members);
+        document.getElementById('ready-team-name').textContent = '';  // No subtitle needed
+        document.getElementById('ready-duration').textContent = teamDuration;
+    } else {
+        // Individual mode: show current player
+        const player = team.members[gameState.currentPlayerIndex];
+        document.getElementById('ready-player-name').textContent = player;
+        document.getElementById('ready-team-name').textContent = formatTeammates(team.members, player);
+        document.getElementById('ready-duration').textContent = gameConfig.playerDuration;
+    }
+
+    // Preload first batch of images
+    preloadImages(gameState.currentArtistIndex, 5);
 
     // Setup go button
     const goButton = document.getElementById('go-button');
@@ -239,14 +291,25 @@ function startRound() {
     phasePlaying.classList.remove('hidden');
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
-    const player = team.members[gameState.currentPlayerIndex];
-    const playerId = `${team.id}-${player}`;
-    const playerDuration = Math.floor(gameConfig.roundDuration / team.members.length);
 
     // Reset round state
-    gameState.remainingTime = playerDuration;
+    if (gameConfig.gameMode === 'swap-places') {
+        // Swap Places mode: use total team duration
+        gameState.remainingTime = gameConfig.playerDuration * team.members.length;
+        gameState.initialRoundDuration = gameState.remainingTime;
+    } else {
+        // Individual mode: use player duration
+        gameState.remainingTime = gameConfig.playerDuration;
+        gameState.initialRoundDuration = gameState.remainingTime;
+    }
+
     gameState.roundStartTime = Date.now();
+
+    // Reset current player's stats
+    const player = team.members[gameState.currentPlayerIndex];
+    const playerId = `${team.id}-${player}`;
     gameState.playerStats[playerId].currentStreak = 0;
+    gameState.playerStats[playerId].currentStreakArtists = [];
 
     // Show first artist
     showCurrentArtist();
@@ -271,15 +334,31 @@ function showCurrentArtist() {
         console.log('Ran out of artists, reshuffling...');
         shuffleArray(gameState.artists);
         gameState.currentArtistIndex = 0;
+        preloadedImages.clear(); // Clear cache on reshuffle
     }
 
     const artist = gameState.artists[gameState.currentArtistIndex];
-    document.getElementById('artist-image').src = artist.image || 'https://via.placeholder.com/300?text=No+Image';
+
+    // Use preloaded image if available, otherwise use URL directly
+    const imgElement = document.getElementById('artist-image');
+    const preloadedImg = preloadedImages.get(artist.id);
+    if (preloadedImg && preloadedImg.complete) {
+        imgElement.src = preloadedImg.src;
+    } else {
+        imgElement.src = artist.image || 'https://via.placeholder.com/300?text=No+Image';
+    }
+
     document.getElementById('artist-name').textContent = artist.name;
 
     // Show popularity (for debugging/tuning filter)
     const popularity = artist.popularity || 0;
     document.getElementById('artist-popularity').textContent = `Popularity: ${popularity}`;
+
+    // Track when this artist was shown (for accurate guess timing)
+    gameState.currentArtistStartTime = Date.now();
+
+    // Preload next 5 images
+    preloadImages(gameState.currentArtistIndex + 1, 5);
 }
 
 /**
@@ -305,10 +384,8 @@ function updateTimerDisplay() {
     const timerElement = document.getElementById('timer');
     timerElement.textContent = gameState.remainingTime;
 
-    // Update progress bar
-    const team = gameConfig.teams[gameState.currentTeamIndex];
-    const playerDuration = Math.floor(gameConfig.roundDuration / team.members.length);
-    const progress = (gameState.remainingTime / playerDuration) * 100;
+    // Update progress bar (use actual initial duration, not just playerDuration)
+    const progress = (gameState.remainingTime / gameState.initialRoundDuration) * 100;
     document.getElementById('progress-fill').style.width = `${progress}%`;
 
     // Color changes based on time
@@ -346,6 +423,7 @@ function handlePass() {
 
     stats.passed++;
     stats.currentStreak = 0; // Break streak
+    stats.currentStreakArtists = []; // Clear streak artists
 
     // Move to next artist
     gameState.currentArtistIndex++;
@@ -363,13 +441,17 @@ function handleCorrect() {
     const stats = gameState.playerStats[playerId];
     const artist = gameState.artists[gameState.currentArtistIndex];
 
-    const guessTime = (Date.now() - gameState.roundStartTime) / 1000;
+    const guessTime = (Date.now() - gameState.currentArtistStartTime) / 1000;
 
     // Update stats
     stats.correct++;
     stats.currentStreak++;
+    stats.currentStreakArtists.push(artist);
+
+    // Update best streak if current is better
     if (stats.currentStreak > stats.bestStreak) {
         stats.bestStreak = stats.currentStreak;
+        stats.bestStreakArtists = [...stats.currentStreakArtists];
     }
 
     // Track fastest guess
@@ -410,14 +492,55 @@ function endRound() {
     gameState.currentArtistIndex++;
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
+
+    // In swap-places mode, skip individual round done and go directly to team done
+    if (gameConfig.gameMode === 'swap-places') {
+        showTeamDone();
+        return;
+    }
+
+    // Individual mode: show player's round stats
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
     const stats = gameState.playerStats[playerId];
 
-    // Show round summary
+    // Show round summary - bar chart
+    const total = stats.correct + stats.passed;
+    const correctPercent = total > 0 ? (stats.correct / total) * 100 : 0;
+    const passedPercent = total > 0 ? (stats.passed / total) * 100 : 0;
+
     document.getElementById('summary-correct').textContent = stats.correct;
+    document.getElementById('summary-correct-bar').style.width = `${correctPercent}%`;
+
     document.getElementById('summary-passed').textContent = stats.passed;
-    document.getElementById('summary-streak').textContent = stats.bestStreak;
+    document.getElementById('summary-passed-bar').style.width = `${passedPercent}%`;
+
+    // Show streak with artist thumbnails (only if 2 or more)
+    if (stats.bestStreak >= 2) {
+        const streakArtists = stats.bestStreakArtists.slice(0, 5);
+        const streakHtml = `
+            <div class="streak-header">Best Streak: ${stats.bestStreak} in a row!</div>
+            <div class="streak-artists-inline">
+                ${streakArtists.map(artist => `
+                    <img src="${artist.image || 'https://via.placeholder.com/50?text=No+Image'}"
+                         alt="${artist.name}"
+                         class="streak-artist-thumb"
+                         title="${artist.name}"
+                    />
+                `).join('')}
+                ${stats.bestStreak > 5 ? `<span class="streak-more-inline">+${stats.bestStreak - 5}</span>` : ''}
+            </div>
+        `;
+        document.getElementById('round-streak-display').innerHTML = streakHtml;
+    } else {
+        document.getElementById('round-streak-display').innerHTML = '';
+    }
+
+    // Always show round done phase first
+    hideAllPhases();
+    phaseRoundDone.classList.remove('hidden');
+
+    const playerAnnouncementDiv = phaseRoundDone.querySelector('.player-announcement');
 
     // Check if this team has more players
     if (gameState.currentPlayerIndex < team.members.length - 1) {
@@ -425,13 +548,12 @@ function endRound() {
         gameState.currentPlayerIndex++;
         const nextPlayer = team.members[gameState.currentPlayerIndex];
         document.getElementById('next-player-name').textContent = nextPlayer;
-
-        hideAllPhases();
-        phaseRoundDone.classList.remove('hidden');
+        playerAnnouncementDiv.style.display = 'block';
         document.getElementById('continue-button').onclick = startRound;
     } else {
-        // Team is done
-        showTeamDone();
+        // Last player in team - hide "next player" section and go to team done
+        playerAnnouncementDiv.style.display = 'none';
+        document.getElementById('continue-button').onclick = showTeamDone;
     }
 }
 
@@ -441,7 +563,11 @@ function endRound() {
 function showTeamDone() {
     const team = gameConfig.teams[gameState.currentTeamIndex];
 
-    document.getElementById('completed-team-name').textContent = team.name;
+    console.log('showTeamDone - currentTeamIndex:', gameState.currentTeamIndex);
+    console.log('showTeamDone - total teams:', gameConfig.teams.length);
+    console.log('showTeamDone - team:', team);
+
+    document.getElementById('completed-team-name').textContent = formatTeamName(team.members);
     document.getElementById('team-total-score').textContent = gameState.scores[team.id];
 
     // Check if there are more teams
@@ -453,14 +579,17 @@ function showTeamDone() {
         const nextTeam = gameConfig.teams[gameState.currentTeamIndex];
         const nextPlayer = nextTeam.members[0];
 
+        console.log('showTeamDone - Moving to next team:', nextTeam);
+
         document.getElementById('next-team-player').textContent = nextPlayer;
-        document.getElementById('next-team-name').textContent = nextTeam.name;
+        document.getElementById('next-team-name').textContent = formatTeammates(nextTeam.members, nextPlayer);
 
         hideAllPhases();
         phaseTeamDone.classList.remove('hidden');
         document.getElementById('next-team-button').onclick = showReadyPhase;
     } else {
         // Game is over
+        console.log('showTeamDone - Game over!');
         showGameOver();
     }
 }
@@ -483,7 +612,7 @@ function showGameOver() {
     const scoresHtml = scoresList.map((item, index) => `
         <div class="score-item ${index === 0 ? 'winner' : ''}">
             <span class="rank">${index + 1}.</span>
-            <span class="team-name">${item.team.name}</span>
+            <span class="team-name">${formatTeamName(item.team.members)}</span>
             <span class="score">${item.score}</span>
         </div>
     `).join('');
@@ -506,7 +635,7 @@ function showGameOver() {
             <div class="highlight-content">
                 <img src="${fastestGuess.artist.image}" alt="${fastestGuess.artist.name}" class="highlight-artist-image">
                 <div class="highlight-text">
-                    <p><strong>${fastestPlayer.name}</strong> (${fastestPlayer.teamName})</p>
+                    <p><strong>${fastestPlayer.name}</strong> (${formatTeammates(fastestPlayer.teamMembers, fastestPlayer.name)})</p>
                     <p>${fastestGuess.artist.name}</p>
                     <p class="time">${fastestGuess.time.toFixed(1)}s</p>
                 </div>
@@ -528,11 +657,25 @@ function showGameOver() {
     });
 
     if (bestStreakPlayer && bestStreak > 0) {
+        // Show up to 5 artist images from the streak
+        const streakArtists = bestStreakPlayer.bestStreakArtists.slice(0, 5);
+        const artistImagesHtml = streakArtists.map(artist => `
+            <img src="${artist.image || 'https://via.placeholder.com/50?text=No+Image'}"
+                 alt="${artist.name}"
+                 class="streak-artist-image"
+                 title="${artist.name}"
+            />
+        `).join('');
+
         document.getElementById('best-streak').innerHTML = `
             <div class="highlight-content">
                 <div class="highlight-text">
-                    <p><strong>${bestStreakPlayer.name}</strong> (${bestStreakPlayer.teamName})</p>
+                    <p><strong>${bestStreakPlayer.name}</strong> (${formatTeammates(bestStreakPlayer.teamMembers, bestStreakPlayer.name)})</p>
                     <p class="streak-number">${bestStreak} in a row!</p>
+                    <div class="streak-artists">
+                        ${artistImagesHtml}
+                        ${bestStreak > 5 ? `<span class="streak-more">+${bestStreak - 5} more</span>` : ''}
+                    </div>
                 </div>
             </div>
         `;
