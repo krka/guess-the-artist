@@ -135,15 +135,15 @@
                             </div>
 
                             <div class="input-group">
-                                <label for="min-popularity">Minimum Artist Popularity (0-100):</label>
-                                <input type="range" id="min-popularity" min="0" max="100" value="30" step="5">
+                                <label for="min-popularity">Difficulty (Artist Popularity Filter):</label>
+                                <input type="range" id="min-popularity" min="0" max="100" value="0" step="5">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #b3b3b3; margin-top: 5px;">
-                                    <span>All artists (0)</span>
-                                    <span id="popularity-value">30</span>
-                                    <span>Very popular (100)</span>
+                                    <span>Hardest - All artists (0)</span>
+                                    <span id="popularity-value">0</span>
+                                    <span>Easiest - Very popular (100)</span>
                                 </div>
                                 <p style="font-size: 0.9rem; color: #b3b3b3; margin-top: 5px;">
-                                    Higher values filter out obscure artists. Recommended: 30-40
+                                    Higher values = easier game (only well-known artists). Most users leave this at 0.
                                 </p>
                             </div>
 

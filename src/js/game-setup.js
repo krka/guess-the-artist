@@ -601,6 +601,11 @@ function startGame() {
         }
     });
 
+    // Calculate minimum artists needed for the entire game
+    const totalGameSeconds = teams.reduce((total, team) => {
+        return total + roundDuration * team.members.length;
+    }, 0);
+
     const gameConfig = {
         teams: teams,
         roundDuration: roundDuration,
@@ -608,7 +613,8 @@ function startGame() {
         artistCount: artistCount,
         playlistIds: actualPlaylistIds,  // Only actual playlist IDs
         timeRange: timeRange,  // For top artists
-        minPopularity: minPopularity  // Filter out obscure artists
+        minPopularity: minPopularity,  // Filter out obscure artists
+        minArtistsNeeded: totalGameSeconds  // Minimum to avoid running out
     };
 
     // Save to localStorage for the game page

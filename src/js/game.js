@@ -143,6 +143,18 @@ async function fetchArtists() {
         gameState.artists = allArtists.slice(0, Math.min(gameConfig.artistCount, allArtists.length));
 
         console.log(`Loaded ${gameState.artists.length} artists for game`);
+
+        // Check if we have enough artists for the game
+        const minNeeded = gameConfig.minArtistsNeeded || 20;
+        if (gameState.artists.length < minNeeded) {
+            const message = `Not enough artists! Found ${gameState.artists.length}, need at least ${minNeeded}. Try adding more sources or lowering the popularity filter.`;
+            showStatus(message, 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 5000);
+            throw new Error(message);
+        }
+
         if (minPopularity > 0) {
             showStatus(`Artists loaded! (filtered by popularity ≥ ${minPopularity})`, 'success');
         } else {
@@ -220,14 +232,19 @@ function startRound() {
  */
 function showCurrentArtist() {
     if (gameState.currentArtistIndex >= gameState.artists.length) {
-        // No more artists
-        endRound();
-        return;
+        // Ran out of artists - reshuffle and reuse them
+        console.log('Ran out of artists, reshuffling...');
+        shuffleArray(gameState.artists);
+        gameState.currentArtistIndex = 0;
     }
 
     const artist = gameState.artists[gameState.currentArtistIndex];
     document.getElementById('artist-image').src = artist.image || 'https://via.placeholder.com/300?text=No+Image';
     document.getElementById('artist-name').textContent = artist.name;
+
+    // Show popularity (for debugging/tuning filter)
+    const popularity = artist.popularity || 0;
+    document.getElementById('artist-popularity').textContent = `Popularity: ${popularity}`;
 }
 
 /**

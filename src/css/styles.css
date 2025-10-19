@@ -832,6 +832,13 @@ select:focus {
     margin-top: 20px;
 }
 
+.artist-popularity {
+    font-size: 0.9rem;
+    color: #b3b3b3;
+    margin-top: 8px;
+    font-style: italic;
+}
+
 /* Game Controls */
 .game-controls {
     display: flex;
@@ -1089,6 +1096,11 @@ select:focus {
 
     .artist-name-large {
         font-size: 1.3rem;
+    }
+
+    .artist-popularity {
+        font-size: 0.8rem;
+        margin-top: 5px;
     }
 
     .player-name {
