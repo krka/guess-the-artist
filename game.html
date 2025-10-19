@@ -79,13 +79,37 @@
 
             <!-- Round Done Phase (next player in same team) -->
             <div class="game-phase hidden" id="phase-round-done">
+                <!-- Background mosaic of correct guesses -->
+                <div class="artist-mosaic" id="round-mosaic"></div>
+
                 <div class="game-card">
                     <h2>Round Complete!</h2>
-                    <div class="round-summary">
-                        <p class="summary-stat">Correct answers: <strong id="summary-correct">0</strong></p>
-                        <p class="summary-stat">Passed: <strong id="summary-passed">0</strong></p>
-                        <p class="summary-stat">Best streak: <strong id="summary-streak">0</strong></p>
+
+                    <!-- Stats with bar chart -->
+                    <div class="round-stats">
+                        <div class="stat-bar-chart">
+                            <div class="stat-bar">
+                                <div class="stat-bar-label">Correct</div>
+                                <div class="stat-bar-container">
+                                    <div class="stat-bar-fill correct" id="summary-correct-bar"></div>
+                                    <span class="stat-bar-value" id="summary-correct">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-bar-label">Passed</div>
+                                <div class="stat-bar-container">
+                                    <div class="stat-bar-fill passed" id="summary-passed-bar"></div>
+                                    <span class="stat-bar-value" id="summary-passed">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Streak display with artist thumbnails -->
+                        <div class="round-streak" id="round-streak-display">
+                            <!-- Will be populated dynamically -->
+                        </div>
                     </div>
+
                     <div class="player-announcement">
                         <p>Next up:</p>
                         <p class="player-name" id="next-player-name"></p>

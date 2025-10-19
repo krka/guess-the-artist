@@ -464,10 +464,44 @@ function endRound() {
     const playerId = `${team.id}-${player}`;
     const stats = gameState.playerStats[playerId];
 
-    // Show round summary
+    // Show round summary - bar chart
+    const total = stats.correct + stats.passed;
+    const correctPercent = total > 0 ? (stats.correct / total) * 100 : 0;
+    const passedPercent = total > 0 ? (stats.passed / total) * 100 : 0;
+
     document.getElementById('summary-correct').textContent = stats.correct;
+    document.getElementById('summary-correct-bar').style.width = `${correctPercent}%`;
+
     document.getElementById('summary-passed').textContent = stats.passed;
-    document.getElementById('summary-streak').textContent = stats.bestStreak;
+    document.getElementById('summary-passed-bar').style.width = `${passedPercent}%`;
+
+    // Show background mosaic of correct guesses
+    const correctGuesses = stats.guesses.filter(g => g.wasCorrect);
+    const mosaicHtml = correctGuesses.slice(0, 20).map(guess => `
+        <div class="mosaic-tile" style="background-image: url('${guess.artist.image || ''}')"></div>
+    `).join('');
+    document.getElementById('round-mosaic').innerHTML = mosaicHtml;
+
+    // Show streak with artist thumbnails
+    if (stats.bestStreak > 0) {
+        const streakArtists = stats.bestStreakArtists.slice(0, 5);
+        const streakHtml = `
+            <div class="streak-header">Best Streak: ${stats.bestStreak} in a row!</div>
+            <div class="streak-artists-inline">
+                ${streakArtists.map(artist => `
+                    <img src="${artist.image || 'https://via.placeholder.com/50?text=No+Image'}"
+                         alt="${artist.name}"
+                         class="streak-artist-thumb"
+                         title="${artist.name}"
+                    />
+                `).join('')}
+                ${stats.bestStreak > 5 ? `<span class="streak-more-inline">+${stats.bestStreak - 5}</span>` : ''}
+            </div>
+        `;
+        document.getElementById('round-streak-display').innerHTML = streakHtml;
+    } else {
+        document.getElementById('round-streak-display').innerHTML = '';
+    }
 
     // Check if this team has more players
     if (gameState.currentPlayerIndex < team.members.length - 1) {

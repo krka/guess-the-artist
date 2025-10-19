@@ -994,6 +994,124 @@ select:focus {
     color: var(--text-color);
 }
 
+/* Artist Mosaic Background */
+.artist-mosaic {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-auto-rows: 100px;
+    gap: 5px;
+    padding: 5px;
+    opacity: 0.15;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.mosaic-tile {
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+}
+
+/* Round Stats */
+.round-stats {
+    position: relative;
+    z-index: 1;
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+}
+
+/* Stat Bar Chart */
+.stat-bar-chart {
+    margin-bottom: 20px;
+}
+
+.stat-bar {
+    margin-bottom: 15px;
+}
+
+.stat-bar-label {
+    font-size: 0.9rem;
+    color: #b3b3b3;
+    margin-bottom: 5px;
+}
+
+.stat-bar-container {
+    position: relative;
+    background-color: var(--card-bg);
+    height: 40px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    border-radius: var(--border-radius);
+}
+
+.stat-bar-fill.correct {
+    background-color: var(--primary-color);
+}
+
+.stat-bar-fill.passed {
+    background-color: #f39c12;
+}
+
+.stat-bar-value {
+    position: absolute;
+    right: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-color);
+    z-index: 1;
+}
+
+/* Round Streak Display */
+.round-streak {
+    background-color: rgba(29, 185, 84, 0.1);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.streak-header {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.streak-artists-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.streak-artist-thumb {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.streak-more-inline {
+    color: #b3b3b3;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
 .summary-stat strong {
     color: var(--primary-color);
 }
