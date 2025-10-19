@@ -491,13 +491,16 @@ class SpotifyClient {
 
             const data = await response.json();
 
-            return data.playlists.items.map(playlist => ({
-                id: playlist.id,
-                name: playlist.name,
-                owner: playlist.owner.display_name,
-                trackCount: playlist.tracks.total,
-                image: playlist.images[0]?.url || null,
-            }));
+            // Filter out null entries that Spotify sometimes returns
+            return data.playlists.items
+                .filter(playlist => playlist !== null)
+                .map(playlist => ({
+                    id: playlist.id,
+                    name: playlist.name,
+                    owner: playlist.owner.display_name,
+                    trackCount: playlist.tracks.total,
+                    image: playlist.images[0]?.url || null,
+                }));
         } catch (error) {
             console.error('Error searching playlists:', error);
             throw error;
