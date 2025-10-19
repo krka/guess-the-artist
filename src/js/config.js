@@ -11,8 +11,8 @@
  */
 
 const SPOTIFY_CONFIG = {
-    // Replace with your Spotify App Client ID
-    clientId: 'YOUR_CLIENT_ID_HERE',
+    // Spotify App Client ID (public, safe to commit)
+    clientId: 'ec5f94ae62a74407920a3cb46f916fe6',
 
     // Redirect URI - automatically uses current origin
     // Make sure this matches what you set in Spotify Dashboard

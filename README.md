@@ -1,4 +1,4 @@
-# Sista Minuten
+# Guess the Artist
 
 A web-based social music guessing game inspired by the Swedish gameshow "Doobidoo".
 
@@ -20,18 +20,21 @@ Two players team up to identify music artists. One player sings, the other guess
 1. Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 2. Click "Create app"
 3. Fill in the details:
-   - **App name**: Sista Minuten (or whatever you prefer)
+   - **App name**: guess-the-artist (or whatever you prefer)
    - **App description**: Music guessing game
-   - **Redirect URI**: `http://localhost:8000` (for local development)
+   - **Redirect URIs**: Add all three:
+     - `http://localhost:8000`
+     - `http://127.0.0.1:8000`
+     - `https://krka.github.io/guess-the-artist/`
    - **API**: Select "Web API"
 4. Click "Save"
 5. Copy your **Client ID** (you won't need the Client Secret!)
 
 ### 2. Configure the App
 
-1. Open `src/js/config.js` in your editor
-2. Replace `YOUR_CLIENT_ID_HERE` with your actual Spotify Client ID
-3. Save the file
+The Client ID is already configured in `src/js/config.js`. If you're forking this repo, you'll need to:
+1. Create your own Spotify app (step 1 above)
+2. Update the Client ID in `src/js/config.js`
 
 ### 3. Run the App
 
@@ -73,9 +76,7 @@ Since this is a static site, you can deploy it anywhere:
 - **Netlify**: Drag and drop your folder
 - **Vercel**: Connect your git repo
 
-**Important**: When deploying, update:
-1. Your Spotify app's Redirect URI to include your production URL
-2. The `redirectUri` in `src/js/config.js` (or leave it as `window.location.origin`)
+**Important**: The app automatically adapts to any domain using `window.location.origin`. Just make sure to add your production URL to your Spotify app's redirect URIs.
 
 ## Tech Stack
 

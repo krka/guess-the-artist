@@ -8,8 +8,7 @@ GitHub Pages is perfect for this app - it's free, fast, and requires zero config
 
 1. **Push your code to GitHub**:
    ```bash
-   # Create a new repo on GitHub first, then:
-   git remote add origin https://github.com/YOUR_USERNAME/sista_minuten.git
+   git remote add origin git@github.com:krka/guess-the-artist.git
    git push -u origin master
    ```
 
@@ -18,29 +17,25 @@ GitHub Pages is perfect for this app - it's free, fast, and requires zero config
    - Scroll to "Pages" section
    - Under "Source", select branch `master` and folder `/ (root)`
    - Click Save
-   - Your site will be live at: `https://YOUR_USERNAME.github.io/sista_minuten/`
+   - Your site will be live at: `https://krka.github.io/guess-the-artist/`
 
-3. **Update Spotify App Settings**:
+3. **Verify Spotify App Settings**:
    - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
    - Open your app settings
-   - Add redirect URI: `https://YOUR_USERNAME.github.io/sista_minuten/`
-   - Click "Save"
+   - Confirm redirect URI is added: `https://krka.github.io/guess-the-artist/`
+   - (You should have already added this during setup!)
 
-4. **Update config.js** (Optional):
+4. **Test the deployment**:
+   - Wait a few minutes for GitHub Pages to build
+   - Visit: `https://krka.github.io/guess-the-artist/`
+   - Click "Login with Spotify"
+   - Should work immediately!
 
-   The current config uses `window.location.origin` which automatically adapts to any domain. This means it works on:
-   - `http://localhost:8000` (local development)
-   - `https://yourusername.github.io/sista_minuten` (production)
-   - Any custom domain you configure
+**Note**: The config automatically uses `window.location.origin` which adapts to any domain:
+- `http://localhost:8000` (local development)
+- `https://krka.github.io/guess-the-artist/` (production)
 
-   **No code changes needed!** Just make sure both URLs are added to your Spotify app's redirect URIs.
-
-### Testing the Deployment
-
-1. Wait a few minutes for GitHub Pages to build
-2. Visit your URL: `https://YOUR_USERNAME.github.io/sista_minuten/`
-3. Click "Login with Spotify"
-4. Should work immediately!
+No code changes needed when switching between environments!
 
 ## Other Hosting Options
 
@@ -90,7 +85,7 @@ You can have both local and production redirect URIs configured simultaneously:
 ```
 http://localhost:8000
 http://127.0.0.1:8000
-https://yourusername.github.io/sista_minuten/
+https://krka.github.io/guess-the-artist/
 ```
 
 The app automatically uses `window.location.origin`, so it works in all environments without code changes!

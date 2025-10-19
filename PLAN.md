@@ -1,7 +1,7 @@
-# Sista Minuten - Game Plan
+# Guess the Artist - Game Plan
 
 ## Overview
-Web-based social game inspired by the "Sista Minuten" segment from the Swedish gameshow "Doobidoo". Players work in teams to guess music artists based on sung songs within a time limit.
+Web-based social music guessing game inspired by the "Sista Minuten" segment from the Swedish gameshow "Doobidoo". Players work in teams to guess music artists based on sung songs within a time limit.
 
 ## Game Rules
 
@@ -128,19 +128,19 @@ GET https://api.spotify.com/v1/artists/{id}
 ## File Structure (Phase 1)
 
 ```
-sista_minuten/
+guess-the-artist/
 ├── PLAN.md
 ├── README.md
+├── DEPLOY.md
 ├── .gitignore
 ├── index.html          # Debug view with artist display
-├── src/
-│   ├── js/
-│   │   ├── spotify-client.js    # Spotify API integration
-│   │   └── main.js              # Main app logic
-│   └── css/
-│       └── styles.css           # Styling
-└── config/
-    └── .env.example            # Environment variables template
+└── src/
+    ├── js/
+    │   ├── config.js           # Spotify configuration
+    │   ├── spotify-client.js   # Spotify OAuth + API client
+    │   └── main.js             # Main app logic
+    └── css/
+        └── styles.css          # Styling
 ```
 
 ## Spotify API Setup Requirements
