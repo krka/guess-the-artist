@@ -449,17 +449,17 @@ class SpotifyClient {
 
                 const data = await response.json();
 
-                // Extract unique artists
+                // Extract unique artists (primary artist only, skip features)
                 data.items.forEach(item => {
-                    if (item.track && item.track.artists) {
-                        item.track.artists.forEach(artist => {
-                            if (!artistsMap.has(artist.id)) {
-                                artistsMap.set(artist.id, {
-                                    id: artist.id,
-                                    name: artist.name,
-                                });
-                            }
-                        });
+                    if (item.track && item.track.artists && item.track.artists.length > 0) {
+                        // Only take the first artist (primary), not featured artists
+                        const artist = item.track.artists[0];
+                        if (!artistsMap.has(artist.id)) {
+                            artistsMap.set(artist.id, {
+                                id: artist.id,
+                                name: artist.name,
+                            });
+                        }
                     }
                 });
 

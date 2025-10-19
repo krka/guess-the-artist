@@ -144,6 +144,9 @@ async function initializeAuthenticatedUI() {
     gameSetupSection.classList.remove('hidden');
     console.log('UI sections toggled');
 
+    // Restore saved state
+    restoreSavedState();
+
     // Load playlists immediately
     loadPlaylists();
 
@@ -158,6 +161,43 @@ async function initializeAuthenticatedUI() {
         console.error('Failed to fetch user profile:', error);
         userName.textContent = 'Logged in';
         showStatus('Ready to set up your game!', 'success');
+    }
+}
+
+/**
+ * Restore saved state from localStorage
+ */
+function restoreSavedState() {
+    try {
+        // Restore teams
+        const savedTeams = localStorage.getItem('savedTeams');
+        if (savedTeams) {
+            teams = JSON.parse(savedTeams);
+            renderTeams();
+            updateStartButtonState();
+            console.log('Restored teams:', teams);
+        }
+
+        // Restore selected playlists
+        const savedPlaylists = localStorage.getItem('savedPlaylists');
+        if (savedPlaylists) {
+            selectedPlaylistIds = JSON.parse(savedPlaylists);
+            console.log('Restored selected playlists:', selectedPlaylistIds);
+        }
+    } catch (error) {
+        console.error('Failed to restore saved state:', error);
+    }
+}
+
+/**
+ * Save state to localStorage
+ */
+function saveState() {
+    try {
+        localStorage.setItem('savedTeams', JSON.stringify(teams));
+        localStorage.setItem('savedPlaylists', JSON.stringify(selectedPlaylistIds));
+    } catch (error) {
+        console.error('Failed to save state:', error);
     }
 }
 
@@ -202,6 +242,7 @@ function addTeam() {
     teams.push(team);
     renderTeams();
     updateStartButtonState();
+    saveState();
 
     // Clear input
     newTeamPlayersInput.value = '';
@@ -215,6 +256,7 @@ function removeTeam(teamId) {
     teams = teams.filter(t => t.id !== teamId);
     renderTeams();
     updateStartButtonState();
+    saveState();
 }
 
 /**
@@ -229,6 +271,7 @@ function updateTeamMembers(teamId, membersText) {
             .map(m => m.trim())
             .filter(m => m.length > 0);
         updateStartButtonState();
+        saveState();
     }
 }
 
@@ -279,6 +322,7 @@ function updateTeamName(teamId, newName) {
     const team = teams.find(t => t.id === teamId);
     if (team) {
         team.name = newName.trim() || `Team ${teams.indexOf(team) + 1}`;
+        saveState();
     }
 }
 
@@ -322,8 +366,20 @@ async function loadPlaylists() {
         playlistsList.classList.remove('hidden');
     } catch (error) {
         console.error('Failed to load playlists:', error);
-        showStatus(`Failed to load playlists: ${error.message}`, 'error');
+
+        // Show specific error message
+        let errorMsg = 'Could not load your playlists. ';
+        if (error.message.includes('401') || error.message.includes('Session expired')) {
+            errorMsg += 'Your session may have expired. Try logging out and back in.';
+        } else if (error.message.includes('403')) {
+            errorMsg += 'Permission denied. Please re-authorize the app.';
+        } else {
+            errorMsg += 'You can still use Magic Sources (My Top Artists, Decades, Related Artists).';
+        }
+
+        showStatus(errorMsg, 'error');
         playlistsLoading.classList.add('hidden');
+
         // Still show magic sources even if playlists fail
         renderPlaylists();
         playlistsList.classList.remove('hidden');
@@ -471,6 +527,7 @@ function addPlaylist(playlistId) {
             renderPlaylists('');
         }
 
+        saveState();
         console.log('Added playlist:', playlistId);
     }
 }
@@ -484,6 +541,7 @@ function removePlaylist(playlistId) {
         selectedPlaylistIds.splice(index, 1);
         renderPlaylists(playlistFilter.value);
         renderSelectedPlaylists();
+        saveState();
         console.log('Removed playlist:', playlistId);
     }
 }

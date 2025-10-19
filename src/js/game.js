@@ -324,6 +324,9 @@ function endRound() {
         gameState.timerInterval = null;
     }
 
+    // Increment artist index so next player doesn't see the same artist (spoiler fix)
+    gameState.currentArtistIndex++;
+
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
