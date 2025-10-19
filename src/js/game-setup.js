@@ -108,6 +108,11 @@ function setupEventListeners() {
         timeRangeSelect.addEventListener('change', saveState);
     }
 
+    const gameModeSelect = document.getElementById('game-mode');
+    if (gameModeSelect) {
+        gameModeSelect.addEventListener('change', saveState);
+    }
+
     // Search playlists
     const searchButton = document.getElementById('playlist-search-button');
     const searchInput = document.getElementById('playlist-search-input');
@@ -215,6 +220,9 @@ function restoreSavedState() {
                 document.getElementById('min-popularity').value = settings.minPopularity;
                 document.getElementById('popularity-value').textContent = settings.minPopularity;
             }
+            if (settings.gameMode !== undefined) {
+                document.getElementById('game-mode').value = settings.gameMode;
+            }
             console.log('Restored settings:', settings);
         }
     } catch (error) {
@@ -234,7 +242,8 @@ function saveState() {
         const settings = {
             roundDuration: parseInt(document.getElementById('round-duration').value),
             timeRange: document.getElementById('time-range').value,
-            minPopularity: parseInt(document.getElementById('min-popularity').value)
+            minPopularity: parseInt(document.getElementById('min-popularity').value),
+            gameMode: document.getElementById('game-mode').value
         };
         localStorage.setItem('savedSettings', JSON.stringify(settings));
     } catch (error) {
@@ -709,6 +718,7 @@ async function startGame() {
     const roundDuration = parseInt(document.getElementById('round-duration').value);
     const timeRange = document.getElementById('time-range').value;
     const minPopularity = parseInt(document.getElementById('min-popularity').value);
+    const gameMode = document.getElementById('game-mode').value;
 
     // Validate authentication BEFORE navigating
     try {
@@ -772,6 +782,7 @@ async function startGame() {
     const gameConfig = {
         teams: validTeams,
         playerDuration: roundDuration,  // Time per player (exactly what's in the setting)
+        gameMode: gameMode,  // 'individual' or 'swap-places'
         playlistIds: selectedPlaylistIds,  // Selected playlist IDs
         minPopularity: minPopularity,  // Filter out obscure artists
         minArtistsNeeded: totalGameSeconds  // Minimum to avoid running out

@@ -144,6 +144,18 @@
                             </div>
 
                             <div class="input-group">
+                                <label for="game-mode">Game Mode:</label>
+                                <select id="game-mode">
+                                    <option value="individual">Individual Rounds</option>
+                                    <option value="swap-places">Swap Places (Team Round)</option>
+                                </select>
+                                <p style="font-size: 0.9rem; color: #b3b3b3; margin-top: 5px;">
+                                    <strong>Individual:</strong> Each player gets their own round.<br>
+                                    <strong>Swap Places:</strong> Team plays together. After each correct guess, players swap roles (singer ↔ guesser).
+                                </p>
+                            </div>
+
+                            <div class="input-group">
                                 <label for="min-popularity">Difficulty (Artist Popularity Filter):</label>
                                 <input type="range" id="min-popularity" min="0" max="100" value="0" step="5">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #b3b3b3; margin-top: 5px;">

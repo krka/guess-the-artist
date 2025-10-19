@@ -9,6 +9,7 @@ let gameState = {
     artists: [],
     currentTeamIndex: 0,
     currentPlayerIndex: 0,
+    currentSingerIndex: 0,  // For swap-places mode: which player is currently singing
     currentArtistIndex: 0,
     scores: {}, // teamId -> score
     playerStats: {}, // playerId -> { correct, passed, fastestGuess, currentStreak, bestStreak, guesses: [] }
@@ -256,14 +257,23 @@ function showReadyPhase() {
     phaseReady.classList.remove('hidden');
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
-    const player = team.members[gameState.currentPlayerIndex];
 
     console.log('showReadyPhase - gameConfig:', gameConfig);
     console.log('showReadyPhase - playerDuration:', gameConfig.playerDuration);
 
-    document.getElementById('ready-player-name').textContent = player;
-    document.getElementById('ready-team-name').textContent = formatTeammates(team.members, player);
-    document.getElementById('ready-duration').textContent = gameConfig.playerDuration;
+    if (gameConfig.gameMode === 'swap-places') {
+        // Swap Places mode: show team name and total team duration
+        const teamDuration = gameConfig.playerDuration * team.members.length;
+        document.getElementById('ready-player-name').textContent = formatTeamName(team.members);
+        document.getElementById('ready-team-name').textContent = '';  // No subtitle needed
+        document.getElementById('ready-duration').textContent = teamDuration;
+    } else {
+        // Individual mode: show current player
+        const player = team.members[gameState.currentPlayerIndex];
+        document.getElementById('ready-player-name').textContent = player;
+        document.getElementById('ready-team-name').textContent = formatTeammates(team.members, player);
+        document.getElementById('ready-duration').textContent = gameConfig.playerDuration;
+    }
 
     // Preload first batch of images
     preloadImages(gameState.currentArtistIndex, 5);
@@ -281,12 +291,23 @@ function startRound() {
     phasePlaying.classList.remove('hidden');
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
-    const player = team.members[gameState.currentPlayerIndex];
-    const playerId = `${team.id}-${player}`;
 
     // Reset round state
-    gameState.remainingTime = gameConfig.playerDuration;
+    if (gameConfig.gameMode === 'swap-places') {
+        // Swap Places mode: use total team duration
+        gameState.remainingTime = gameConfig.playerDuration * team.members.length;
+        // Reset singer index at start of team's round
+        gameState.currentSingerIndex = 0;
+    } else {
+        // Individual mode: use player duration
+        gameState.remainingTime = gameConfig.playerDuration;
+    }
+
     gameState.roundStartTime = Date.now();
+
+    // Reset current player's stats
+    const player = team.members[gameState.currentPlayerIndex];
+    const playerId = `${team.id}-${player}`;
     gameState.playerStats[playerId].currentStreak = 0;
     gameState.playerStats[playerId].currentStreakArtists = [];
 
@@ -451,6 +472,12 @@ function handleCorrect() {
         wasCorrect: true
     });
 
+    // In swap-places mode, swap singer and guesser roles after correct answer
+    if (gameConfig.gameMode === 'swap-places') {
+        gameState.currentSingerIndex = (gameState.currentSingerIndex + 1) % team.members.length;
+        console.log('Swapped roles - new singer index:', gameState.currentSingerIndex);
+    }
+
     // Move to next artist
     gameState.currentArtistIndex++;
     showCurrentArtist();
@@ -471,6 +498,14 @@ function endRound() {
     gameState.currentArtistIndex++;
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
+
+    // In swap-places mode, skip individual round done and go directly to team done
+    if (gameConfig.gameMode === 'swap-places') {
+        showTeamDone();
+        return;
+    }
+
+    // Individual mode: show player's round stats
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
     const stats = gameState.playerStats[playerId];
