@@ -10,34 +10,75 @@
     <div class="container">
         <header>
             <h1>Sista Minuten - Artist Debug View</h1>
-            <p class="subtitle">Spotify API Integration Test</p>
+            <p class="subtitle">Spotify OAuth PKCE Integration</p>
         </header>
 
-        <section class="controls">
-            <div class="input-group">
-                <label for="client-id">Spotify Client ID:</label>
-                <input type="text" id="client-id" placeholder="Enter your Client ID">
+        <!-- Login Section (shown when not authenticated) -->
+        <section class="auth-section" id="auth-section">
+            <div class="auth-card">
+                <h2>Connect with Spotify</h2>
+                <p>Log in with your Spotify account to fetch your personalized top artists!</p>
+                <button id="login-button" class="btn-primary">Login with Spotify</button>
+
+                <div class="info-box">
+                    <h3>Setup Instructions</h3>
+                    <ol>
+                        <li>Open <code>src/js/config.js</code></li>
+                        <li>Replace <code>YOUR_CLIENT_ID_HERE</code> with your Spotify Client ID</li>
+                        <li>Make sure your redirect URI matches in Spotify Dashboard</li>
+                    </ol>
+                    <p class="note">No client secret needed with PKCE!</p>
+                </div>
             </div>
-            <div class="input-group">
-                <label for="client-secret">Spotify Client Secret:</label>
-                <input type="password" id="client-secret" placeholder="Enter your Client Secret">
-            </div>
-            <div class="input-group">
-                <label for="artist-count">Number of Artists:</label>
-                <input type="number" id="artist-count" value="20" min="1" max="50">
-            </div>
-            <button id="fetch-artists" class="btn-primary">Fetch Artists</button>
         </section>
 
+        <!-- Controls Section (shown when authenticated) -->
+        <section class="controls hidden" id="controls-section">
+            <div class="user-info" id="user-info">
+                <span id="user-name">Loading...</span>
+                <button id="logout-button" class="btn-secondary">Logout</button>
+            </div>
+
+            <div class="fetch-options">
+                <div class="input-group">
+                    <label for="artist-source">Artist Source:</label>
+                    <select id="artist-source">
+                        <option value="top_artists">My Top Artists</option>
+                        <option value="genres">Popular by Genre</option>
+                    </select>
+                </div>
+
+                <div class="input-group" id="time-range-group">
+                    <label for="time-range">Time Range:</label>
+                    <select id="time-range">
+                        <option value="short_term">Last 4 Weeks</option>
+                        <option value="medium_term" selected>Last 6 Months</option>
+                        <option value="long_term">All Time</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="artist-count">Number of Artists:</label>
+                    <input type="number" id="artist-count" value="20" min="1" max="50">
+                </div>
+
+                <button id="fetch-artists" class="btn-primary">Fetch Artists</button>
+            </div>
+        </section>
+
+        <!-- Status Messages -->
         <section class="status">
             <div id="status-message" class="hidden"></div>
         </section>
 
+        <!-- Artists Grid -->
         <section class="artists-grid" id="artists-grid">
             <!-- Artist cards will be dynamically inserted here -->
         </section>
     </div>
 
+    <!-- Load scripts in order -->
+    <script src="src/js/config.js"></script>
     <script src="src/js/spotify-client.js"></script>
     <script src="src/js/main.js"></script>
 </body>

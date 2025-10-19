@@ -1,84 +1,213 @@
 /**
  * Main application logic
- * Handles UI interactions and coordinates with Spotify API client
+ * Handles OAuth flow, UI interactions, and Spotify API coordination
  */
 
 let spotifyClient = null;
 let currentArtists = [];
 
 // DOM Elements
-const clientIdInput = document.getElementById('client-id');
-const clientSecretInput = document.getElementById('client-secret');
+const authSection = document.getElementById('auth-section');
+const controlsSection = document.getElementById('controls-section');
+const loginButton = document.getElementById('login-button');
+const logoutButton = document.getElementById('logout-button');
+const userName = document.getElementById('user-name');
+const artistSourceSelect = document.getElementById('artist-source');
+const timeRangeGroup = document.getElementById('time-range-group');
+const timeRangeSelect = document.getElementById('time-range');
 const artistCountInput = document.getElementById('artist-count');
 const fetchButton = document.getElementById('fetch-artists');
 const statusMessage = document.getElementById('status-message');
 const artistsGrid = document.getElementById('artists-grid');
 
-// Load credentials from localStorage if available
-window.addEventListener('DOMContentLoaded', () => {
-    const savedClientId = localStorage.getItem('spotify_client_id');
-    const savedClientSecret = localStorage.getItem('spotify_client_secret');
+/**
+ * Initialize app on page load
+ */
+window.addEventListener('DOMContentLoaded', async () => {
+    // Initialize Spotify client
+    spotifyClient = new SpotifyClient();
 
-    if (savedClientId) clientIdInput.value = savedClientId;
-    if (savedClientSecret) clientSecretInput.value = savedClientSecret;
-});
-
-// Fetch artists button click handler
-fetchButton.addEventListener('click', async () => {
-    const clientId = clientIdInput.value.trim();
-    const clientSecret = clientSecretInput.value.trim();
-    const artistCount = parseInt(artistCountInput.value);
-
-    // Validate inputs
-    if (!clientId || !clientSecret) {
-        showStatus('Please enter both Client ID and Client Secret', 'error');
-        return;
+    // Check if this is an OAuth callback
+    if (window.location.search.includes('code=')) {
+        showStatus('Completing login...', 'info');
+        try {
+            await spotifyClient.handleCallback();
+            showStatus('Login successful!', 'success');
+            await initializeAuthenticatedUI();
+        } catch (error) {
+            showStatus(`Login failed: ${error.message}`, 'error');
+            showLoginUI();
+        }
+    }
+    // Check if user is already logged in
+    else if (spotifyClient.isAuthenticated()) {
+        try {
+            await initializeAuthenticatedUI();
+        } catch (error) {
+            console.error('Failed to restore session:', error);
+            showStatus('Session expired. Please log in again.', 'error');
+            showLoginUI();
+        }
+    }
+    // Show login UI
+    else {
+        showLoginUI();
     }
 
-    if (artistCount < 1 || artistCount > 50) {
+    // Setup event listeners
+    setupEventListeners();
+});
+
+/**
+ * Setup event listeners
+ */
+function setupEventListeners() {
+    loginButton.addEventListener('click', handleLogin);
+    logoutButton.addEventListener('click', handleLogout);
+    fetchButton.addEventListener('click', handleFetchArtists);
+
+    // Show/hide time range based on artist source
+    artistSourceSelect.addEventListener('change', () => {
+        if (artistSourceSelect.value === 'top_artists') {
+            timeRangeGroup.style.display = 'block';
+        } else {
+            timeRangeGroup.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * Handle login button click
+ */
+async function handleLogin() {
+    try {
+        await spotifyClient.redirectToSpotifyAuth();
+    } catch (error) {
+        showStatus(`Login failed: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Handle logout button click
+ */
+function handleLogout() {
+    spotifyClient.logout();
+    currentArtists = [];
+    artistsGrid.innerHTML = '';
+    showStatus('Logged out successfully', 'success');
+    showLoginUI();
+}
+
+/**
+ * Initialize UI for authenticated user
+ */
+async function initializeAuthenticatedUI() {
+    try {
+        // Fetch user profile
+        const user = await spotifyClient.getCurrentUser();
+        userName.textContent = `Logged in as ${user.display_name || user.id}`;
+
+        // Show controls, hide auth section
+        authSection.classList.add('hidden');
+        controlsSection.classList.remove('hidden');
+
+        showStatus('Ready to fetch artists!', 'success');
+    } catch (error) {
+        throw new Error(`Failed to load user profile: ${error.message}`);
+    }
+}
+
+/**
+ * Show login UI
+ */
+function showLoginUI() {
+    authSection.classList.remove('hidden');
+    controlsSection.classList.add('hidden');
+}
+
+/**
+ * Handle fetch artists button click
+ */
+async function handleFetchArtists() {
+    const source = artistSourceSelect.value;
+    const count = parseInt(artistCountInput.value);
+
+    // Validate count
+    if (count < 1 || count > 50) {
         showStatus('Artist count must be between 1 and 50', 'error');
         return;
     }
 
-    // Save credentials to localStorage
-    localStorage.setItem('spotify_client_id', clientId);
-    localStorage.setItem('spotify_client_secret', clientSecret);
-
-    // Fetch artists
-    await fetchArtists(clientId, clientSecret, artistCount);
-});
+    // Fetch based on source
+    if (source === 'top_artists') {
+        const timeRange = timeRangeSelect.value;
+        await fetchTopArtists(count, timeRange);
+    } else {
+        await fetchArtistsByGenre(count);
+    }
+}
 
 /**
- * Fetch artists from Spotify API
+ * Fetch user's top artists
  */
-async function fetchArtists(clientId, clientSecret, count) {
+async function fetchTopArtists(count, timeRange) {
     try {
-        // Disable button and show loading state
         fetchButton.disabled = true;
         fetchButton.textContent = 'Fetching...';
-        showStatus('Authenticating with Spotify...', 'info');
+        showStatus('Fetching your top artists...', 'info');
         artistsGrid.innerHTML = '<div class="loading">Loading artists...</div>';
 
-        // Create or update Spotify client
-        spotifyClient = new SpotifyClient(clientId, clientSecret);
+        currentArtists = await spotifyClient.getTopArtists(count, timeRange);
 
-        // Authenticate
-        await spotifyClient.authenticate();
-        showStatus('Fetching popular artists...', 'info');
+        displayArtists(currentArtists);
 
-        // Fetch artists
-        currentArtists = await spotifyClient.getPopularArtists(count);
+        const timeRangeText = {
+            'short_term': 'last 4 weeks',
+            'medium_term': 'last 6 months',
+            'long_term': 'all time'
+        }[timeRange];
 
-        // Display artists
+        showStatus(`Successfully loaded ${currentArtists.length} artists from ${timeRangeText}!`, 'success');
+    } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+        artistsGrid.innerHTML = '';
+
+        // If authentication error, show login UI
+        if (error.message.includes('Not authenticated') || error.message.includes('Session expired')) {
+            setTimeout(() => showLoginUI(), 2000);
+        }
+    } finally {
+        fetchButton.disabled = false;
+        fetchButton.textContent = 'Fetch Artists';
+    }
+}
+
+/**
+ * Fetch artists by genre
+ */
+async function fetchArtistsByGenre(count) {
+    const popularGenres = ['pop', 'rock', 'hip hop', 'electronic', 'indie', 'r&b'];
+
+    try {
+        fetchButton.disabled = true;
+        fetchButton.textContent = 'Fetching...';
+        showStatus('Fetching popular artists across genres...', 'info');
+        artistsGrid.innerHTML = '<div class="loading">Loading artists...</div>';
+
+        currentArtists = await spotifyClient.getArtistsByGenres(popularGenres, count);
+
         displayArtists(currentArtists);
 
         showStatus(`Successfully loaded ${currentArtists.length} artists!`, 'success');
     } catch (error) {
         showStatus(`Error: ${error.message}`, 'error');
         artistsGrid.innerHTML = '';
-        console.error('Fetch error:', error);
+
+        // If authentication error, show login UI
+        if (error.message.includes('Not authenticated') || error.message.includes('Session expired')) {
+            setTimeout(() => showLoginUI(), 2000);
+        }
     } finally {
-        // Re-enable button
         fetchButton.disabled = false;
         fetchButton.textContent = 'Fetch Artists';
     }
@@ -91,12 +220,12 @@ function displayArtists(artists) {
     artistsGrid.innerHTML = '';
 
     if (artists.length === 0) {
-        artistsGrid.innerHTML = '<div class="loading">No artists found</div>';
+        artistsGrid.innerHTML = '<div class="loading">No artists found. Try adjusting your settings!</div>';
         return;
     }
 
-    artists.forEach(artist => {
-        const card = createArtistCard(artist);
+    artists.forEach((artist, index) => {
+        const card = createArtistCard(artist, index + 1);
         artistsGrid.appendChild(card);
     });
 }
@@ -104,7 +233,7 @@ function displayArtists(artists) {
 /**
  * Create an artist card element
  */
-function createArtistCard(artist) {
+function createArtistCard(artist, rank) {
     const card = document.createElement('div');
     card.className = 'artist-card';
     card.dataset.artistId = artist.id;
@@ -120,7 +249,7 @@ function createArtistCard(artist) {
 
     const name = document.createElement('div');
     name.className = 'artist-name';
-    name.textContent = artist.name;
+    name.textContent = `${rank}. ${artist.name}`;
 
     const popularity = document.createElement('div');
     popularity.className = 'artist-popularity';
@@ -135,7 +264,8 @@ function createArtistCard(artist) {
     // Add click handler for debugging
     card.addEventListener('click', () => {
         console.log('Artist clicked:', artist);
-        alert(`${artist.name}\nPopularity: ${artist.popularity}\nGenres: ${artist.genres.join(', ')}`);
+        const genresText = artist.genres.length > 0 ? artist.genres.join(', ') : 'No genres listed';
+        alert(`${artist.name}\nPopularity: ${artist.popularity}\nGenres: ${genresText}`);
     });
 
     return card;
@@ -158,7 +288,7 @@ function showStatus(message, type = 'info') {
 }
 
 /**
- * Shuffle array (for future use in game)
+ * Shuffle array (for future game use)
  */
 function shuffleArray(array) {
     const shuffled = [...array];

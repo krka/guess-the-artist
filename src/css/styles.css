@@ -181,6 +181,120 @@ h1 {
     color: #b3b3b3;
 }
 
+/* Auth Section */
+.auth-section {
+    margin-bottom: 30px;
+}
+
+.auth-card {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.auth-card h2 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.auth-card p {
+    color: #b3b3b3;
+    margin-bottom: 25px;
+}
+
+.info-box {
+    margin-top: 30px;
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    text-align: left;
+}
+
+.info-box h3 {
+    color: var(--primary-color);
+    font-size: 1rem;
+    margin-bottom: 15px;
+}
+
+.info-box ol {
+    margin-left: 20px;
+    margin-bottom: 15px;
+    color: #b3b3b3;
+}
+
+.info-box li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.info-box code {
+    background-color: #404040;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--primary-color);
+    font-family: 'Courier New', monospace;
+}
+
+.info-box .note {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin: 0;
+}
+
+/* User Info */
+.user-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #404040;
+}
+
+#user-name {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    background-color: transparent;
+    color: var(--text-color);
+    border: 1px solid #404040;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Fetch Options */
+.fetch-options .input-group {
+    margin-bottom: 15px;
+}
+
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: var(--border-radius);
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: 2rem;
@@ -191,7 +305,7 @@ h1 {
         gap: 15px;
     }
 
-    .controls {
+    .controls, .auth-card {
         padding: 20px;
     }
 }

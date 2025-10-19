@@ -26,49 +26,55 @@ Web-based social game inspired by the "Sista Minuten" segment from the Swedish g
 
 ## Technical Architecture
 
-### Technology Stack (Proposed)
-- **Frontend**: HTML5, CSS3, JavaScript (vanilla or React for future scalability)
-- **Backend**: Node.js with Express (or similar lightweight framework)
-- **API Integration**: Spotify Web API
-- **Data Storage**: Initially in-memory, later database for sessions/leaderboards
+### Technology Stack
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript (purely client-side, no backend required)
+- **API Integration**: Spotify Web API with OAuth 2.0 PKCE flow
+- **Data Storage**: Browser localStorage for sessions and settings
+- **Hosting**: Static hosting (GitHub Pages, Netlify, Vercel, etc.)
 
 ### Spotify API Integration
 
-#### Artist Data Sources (Two Options)
-1. **Global Popular Artists Mode**
-   - Fetch list of popular artists using Spotify API
-   - Pre-select subset for game session
-   - Randomize order for each round
-   - No authentication required
+#### Authentication: OAuth 2.0 with PKCE
+Uses **Authorization Code Flow with PKCE** (Proof Key for Code Exchange):
+- **No client secret required** - safe for client-side apps
+- User logs in with their Spotify account
+- Access token stored in browser memory (not localStorage for security)
+- Token refresh handled automatically
+- **Required scopes**: `user-top-read` (for personalized artists)
 
-2. **Personalized Mode** (Future Enhancement)
-   - OAuth integration with Spotify
-   - Fetch artists from user's listening history
-   - Curate based on top artists, recently played, or playlists
-   - More engaging for users familiar with their own music taste
+#### Artist Data Sources
+1. **Personalized Mode** (Primary)
+   - Fetch artists from user's top artists (`/v1/me/top/artists`)
+   - Time ranges: short_term (4 weeks), medium_term (6 months), long_term (years)
+   - Most engaging - users recognize the artists
+
+2. **Search Mode** (Alternative)
+   - Search for artists across genres (`/v1/search`)
+   - Useful for guest mode or variety
+   - No authentication required for public data
 
 #### Required Data
 - Artist name
 - Artist image (Spotify provides multiple sizes)
 - Artist ID for reference
+- Popularity score (for sorting/filtering)
 
-### API Endpoints (Backend)
+### Spotify API Endpoints Used
 
 ```
-GET /api/artists/popular
-- Returns list of popular artists with images
-- Query params: count (default: 20)
+POST https://accounts.spotify.com/api/token
+- Exchange authorization code for access token (PKCE)
 
-GET /api/game/start
-- Initializes new game session
-- Returns session_id and artist list
+GET https://api.spotify.com/v1/me/top/artists
+- Get user's top artists
+- Query params: limit, time_range, offset
 
-POST /api/game/:session_id/score
-- Updates score for current round
-- Body: { team_id, points }
+GET https://api.spotify.com/v1/search
+- Search for artists
+- Query params: q, type=artist, limit
 
-GET /api/game/:session_id/status
-- Returns current game state
+GET https://api.spotify.com/v1/artists/{id}
+- Get specific artist details
 ```
 
 ## Implementation Phases
@@ -140,18 +146,23 @@ sista_minuten/
 ## Spotify API Setup Requirements
 
 1. Register app at https://developer.spotify.com/dashboard
-2. Obtain Client ID and Client Secret
-3. Configure Redirect URI (for future OAuth)
-4. API Endpoints to use:
-   - Search API: `https://api.spotify.com/v1/search`
-   - Top Artists (requires auth): `https://api.spotify.com/v1/me/top/artists`
-   - Get Artist: `https://api.spotify.com/v1/artists/{id}`
+2. Obtain **Client ID only** (no secret needed for PKCE!)
+3. Configure **Redirect URI**:
+   - For local development: `http://localhost:8000` or `http://127.0.0.1:8000`
+   - For production: Your deployed URL (e.g., `https://yourdomain.com`)
+4. Enable **Web API** access
 
-## Environment Variables
+## Configuration
 
-```
-SPOTIFY_CLIENT_ID=your_client_id
-SPOTIFY_CLIENT_SECRET=your_client_secret
+No environment variables needed! The Client ID can be safely embedded in the frontend code since PKCE doesn't require a secret. Store it in:
+
+```javascript
+// src/js/config.js
+const SPOTIFY_CONFIG = {
+    clientId: 'your_client_id_here',
+    redirectUri: window.location.origin,  // Automatically uses current domain
+    scopes: ['user-top-read']
+};
 ```
 
 ## Future Considerations
