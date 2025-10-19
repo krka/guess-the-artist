@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug View - Guess the Artist</title>
+    <link rel="stylesheet" href="src/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Debug View</h1>
+            <p class="subtitle"><a href="index.html" style="color: #1db954;">← Back to Game</a> | Artist Data Explorer</p>
+        </header>
+
+        <!-- Login Section (shown when not authenticated) -->
+        <section class="auth-section" id="auth-section">
+            <div class="auth-card">
+                <h2>Welcome to Guess the Artist!</h2>
+                <p>Connect with Spotify to play with your personalized music collection.</p>
+                <button id="login-button" class="btn-primary">Login with Spotify</button>
+            </div>
+        </section>
+
+        <!-- Controls Section (shown when authenticated) -->
+        <section class="controls hidden" id="controls-section">
+            <div class="user-info" id="user-info">
+                <span id="user-name">Loading...</span>
+                <button id="logout-button" class="btn-secondary">Logout</button>
+            </div>
+
+            <div class="fetch-options">
+                <div class="input-group">
+                    <label for="artist-source">Artist Source:</label>
+                    <select id="artist-source">
+                        <option value="top_artists">My Top Artists</option>
+                        <option value="genres">Popular by Genre</option>
+                    </select>
+                </div>
+
+                <div class="input-group" id="time-range-group">
+                    <label for="time-range">Time Range:</label>
+                    <select id="time-range">
+                        <option value="short_term">Last 4 Weeks</option>
+                        <option value="medium_term" selected>Last 6 Months</option>
+                        <option value="long_term">All Time</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="artist-count">Number of Artists:</label>
+                    <input type="number" id="artist-count" value="20" min="1" max="50">
+                </div>
+
+                <button id="fetch-artists" class="btn-primary">Fetch Artists</button>
+            </div>
+        </section>
+
+        <!-- Status Messages -->
+        <section class="status">
+            <div id="status-message" class="hidden"></div>
+        </section>
+
+        <!-- Artists Grid -->
+        <section class="artists-grid" id="artists-grid">
+            <!-- Artist cards will be dynamically inserted here -->
+        </section>
+    </div>
+
+    <!-- Load scripts in order -->
+    <script src="src/js/config.js"></script>
+    <script src="src/js/spotify-client.js"></script>
+    <script src="src/js/main.js"></script>
+</body>
+</html>

@@ -295,6 +295,172 @@ select:focus {
     border-color: var(--primary-color);
 }
 
+/* Debug link */
+.debug-link {
+    margin-top: 10px;
+}
+
+.debug-link a {
+    color: #b3b3b3;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.debug-link a:hover {
+    color: var(--primary-color);
+}
+
+/* Game Setup */
+.game-setup {
+    margin-bottom: 30px;
+}
+
+.setup-card {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.setup-card h2 {
+    color: var(--primary-color);
+    margin-bottom: 25px;
+}
+
+.setup-card h3 {
+    color: var(--text-color);
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+/* Teams Section */
+.teams-section {
+    margin-bottom: 30px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.teams-list {
+    margin-bottom: 20px;
+}
+
+.empty-state {
+    color: #b3b3b3;
+    text-align: center;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+.team-card {
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 15px;
+    border: 1px solid #404040;
+}
+
+.team-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.team-name-input {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: var(--primary-color);
+    padding: 8px;
+    border-radius: var(--border-radius);
+}
+
+.team-name-input:hover {
+    border-color: #404040;
+}
+
+.team-name-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: var(--card-bg);
+}
+
+.btn-remove {
+    background-color: transparent;
+    border: 1px solid #404040;
+    color: #e74c3c;
+    font-size: 1.5rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    line-height: 1;
+    padding: 0;
+}
+
+.btn-remove:hover {
+    background-color: #e74c3c;
+    color: var(--text-color);
+    border-color: #e74c3c;
+}
+
+.team-members label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #b3b3b3;
+}
+
+.members-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #404040;
+    border-radius: var(--border-radius);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.members-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.member-count {
+    font-size: 0.85rem;
+    color: #b3b3b3;
+    font-style: italic;
+}
+
+/* Game Settings */
+.game-settings {
+    background-color: var(--secondary-color);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 25px;
+}
+
+/* Large button */
+.btn-large {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.2rem;
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
     h1 {
         font-size: 2rem;
@@ -305,7 +471,19 @@ select:focus {
         gap: 15px;
     }
 
-    .controls, .auth-card {
+    .controls, .auth-card, .setup-card {
         padding: 20px;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .team-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
     }
 }

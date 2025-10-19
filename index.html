@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guess the Artist - Debug View</title>
+    <title>Guess the Artist</title>
     <link rel="stylesheet" href="src/css/styles.css">
 </head>
 <body>
@@ -11,48 +11,73 @@
         <header>
             <h1>Guess the Artist</h1>
             <p class="subtitle">A Music Guessing Game</p>
+            <p class="debug-link"><a href="debug.html">Debug View</a></p>
         </header>
 
         <!-- Login Section (shown when not authenticated) -->
-        <section class="auth-section" id="auth-section">
+        <section class="auth-section hidden" id="auth-section">
             <div class="auth-card">
-                <h2>Welcome to Guess the Artist!</h2>
+                <h2>Welcome!</h2>
                 <p>Connect with Spotify to play with your personalized music collection.</p>
                 <button id="login-button" class="btn-primary">Login with Spotify</button>
             </div>
         </section>
 
-        <!-- Controls Section (shown when authenticated) -->
-        <section class="controls hidden" id="controls-section">
+        <!-- Game Setup Section (shown when authenticated) -->
+        <section class="game-setup hidden" id="game-setup-section">
             <div class="user-info" id="user-info">
                 <span id="user-name">Loading...</span>
                 <button id="logout-button" class="btn-secondary">Logout</button>
             </div>
 
-            <div class="fetch-options">
-                <div class="input-group">
-                    <label for="artist-source">Artist Source:</label>
-                    <select id="artist-source">
-                        <option value="top_artists">My Top Artists</option>
-                        <option value="genres">Popular by Genre</option>
-                    </select>
+            <div class="setup-card">
+                <h2>Game Setup</h2>
+
+                <!-- Team Management -->
+                <div class="teams-section">
+                    <div class="section-header">
+                        <h3>Teams</h3>
+                        <button id="add-team-button" class="btn-secondary">+ Add Team</button>
+                    </div>
+
+                    <div id="teams-list" class="teams-list">
+                        <!-- Teams will be dynamically added here -->
+                    </div>
                 </div>
 
-                <div class="input-group" id="time-range-group">
-                    <label for="time-range">Time Range:</label>
-                    <select id="time-range">
-                        <option value="short_term">Last 4 Weeks</option>
-                        <option value="medium_term" selected>Last 6 Months</option>
-                        <option value="long_term">All Time</option>
-                    </select>
+                <!-- Game Settings -->
+                <div class="game-settings">
+                    <h3>Game Settings</h3>
+
+                    <div class="input-group">
+                        <label for="round-duration">Round Duration (seconds):</label>
+                        <input type="number" id="round-duration" value="60" min="30" max="180" step="15">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="artist-source">Artist Source:</label>
+                        <select id="artist-source">
+                            <option value="top_artists">My Top Artists</option>
+                            <option value="genres">Popular by Genre</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group" id="time-range-group">
+                        <label for="time-range">Time Range:</label>
+                        <select id="time-range">
+                            <option value="short_term">Last 4 Weeks</option>
+                            <option value="medium_term" selected>Last 6 Months</option>
+                            <option value="long_term">All Time</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="artist-count">Number of Artists:</label>
+                        <input type="number" id="artist-count" value="20" min="5" max="50">
+                    </div>
                 </div>
 
-                <div class="input-group">
-                    <label for="artist-count">Number of Artists:</label>
-                    <input type="number" id="artist-count" value="20" min="1" max="50">
-                </div>
-
-                <button id="fetch-artists" class="btn-primary">Fetch Artists</button>
+                <button id="start-game-button" class="btn-primary btn-large" disabled>Start Game</button>
             </div>
         </section>
 
@@ -60,16 +85,11 @@
         <section class="status">
             <div id="status-message" class="hidden"></div>
         </section>
-
-        <!-- Artists Grid -->
-        <section class="artists-grid" id="artists-grid">
-            <!-- Artist cards will be dynamically inserted here -->
-        </section>
     </div>
 
     <!-- Load scripts in order -->
     <script src="src/js/config.js"></script>
     <script src="src/js/spotify-client.js"></script>
-    <script src="src/js/main.js"></script>
+    <script src="src/js/game-setup.js"></script>
 </body>
 </html>
