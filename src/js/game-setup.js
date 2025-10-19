@@ -23,6 +23,9 @@ const playlistSelectorGroup = document.getElementById('playlist-selector-group')
 const playlistsLoading = document.getElementById('playlists-loading');
 const playlistsList = document.getElementById('playlists-list');
 const playlistsEmpty = document.getElementById('playlists-empty');
+const playlistFilter = document.getElementById('playlist-filter');
+const selectedPlaylistsSection = document.getElementById('selected-playlists-section');
+const selectedPlaylistsList = document.getElementById('selected-playlists-list');
 const statusMessage = document.getElementById('status-message');
 
 /**
@@ -105,6 +108,13 @@ function setupEventListeners() {
             playlistSelectorGroup.classList.add('hidden');
         }
     });
+
+    // Filter playlists as user types
+    if (playlistFilter) {
+        playlistFilter.addEventListener('input', (e) => {
+            filterPlaylists(e.target.value);
+        });
+    }
 }
 
 /**
@@ -296,13 +306,16 @@ function updateStartButtonState() {
 async function loadPlaylists() {
     if (userPlaylists.length > 0) {
         // Already loaded, just render
+        playlistFilter.classList.remove('hidden');
         renderPlaylists();
+        renderSelectedPlaylists();
         return;
     }
 
     playlistsLoading.classList.remove('hidden');
     playlistsList.classList.add('hidden');
     playlistsEmpty.classList.add('hidden');
+    playlistFilter.classList.add('hidden');
 
     try {
         userPlaylists = await spotifyClient.getUserPlaylists();
@@ -312,8 +325,10 @@ async function loadPlaylists() {
             playlistsEmpty.classList.remove('hidden');
         } else {
             renderPlaylists();
+            renderSelectedPlaylists();
             playlistsLoading.classList.add('hidden');
             playlistsList.classList.remove('hidden');
+            playlistFilter.classList.remove('hidden');
         }
     } catch (error) {
         console.error('Failed to load playlists:', error);
@@ -324,37 +339,95 @@ async function loadPlaylists() {
 }
 
 /**
- * Render playlists with checkboxes
+ * Filter playlists based on search query
  */
-function renderPlaylists() {
-    playlistsList.innerHTML = userPlaylists.map(playlist => `
+function filterPlaylists(query) {
+    renderPlaylists(query);
+}
+
+/**
+ * Render available playlists (not selected)
+ */
+function renderPlaylists(filterQuery = '') {
+    const query = filterQuery.toLowerCase();
+
+    // Filter out already selected playlists and apply search filter
+    const availablePlaylists = userPlaylists.filter(playlist => {
+        const matchesFilter = playlist.name.toLowerCase().includes(query);
+        const notSelected = !selectedPlaylistIds.includes(playlist.id);
+        return matchesFilter && notSelected;
+    });
+
+    if (availablePlaylists.length === 0) {
+        playlistsList.innerHTML = '<div class="empty-state">No playlists found</div>';
+        return;
+    }
+
+    playlistsList.innerHTML = availablePlaylists.map(playlist => `
         <div class="playlist-item">
-            <label>
-                <input
-                    type="checkbox"
-                    value="${playlist.id}"
-                    onchange="togglePlaylist('${playlist.id}')"
-                    ${selectedPlaylistIds.includes(playlist.id) ? 'checked' : ''}
-                />
+            <div class="playlist-item-content">
                 <span class="playlist-name">${playlist.name}</span>
                 <span class="playlist-info">${playlist.trackCount} tracks</span>
-            </label>
+            </div>
+            <button
+                class="btn-add-playlist"
+                onclick="addPlaylist('${playlist.id}')"
+            >Add</button>
         </div>
     `).join('');
 }
 
 /**
- * Toggle playlist selection
+ * Render selected playlists
  */
-function togglePlaylist(playlistId) {
-    const index = selectedPlaylistIds.indexOf(playlistId);
-    if (index === -1) {
-        selectedPlaylistIds.push(playlistId);
-    } else {
-        selectedPlaylistIds.splice(index, 1);
+function renderSelectedPlaylists() {
+    if (selectedPlaylistIds.length === 0) {
+        selectedPlaylistsSection.classList.add('hidden');
+        return;
     }
 
-    console.log('Selected playlists:', selectedPlaylistIds);
+    selectedPlaylistsSection.classList.remove('hidden');
+
+    const selectedPlaylists = userPlaylists.filter(playlist =>
+        selectedPlaylistIds.includes(playlist.id)
+    );
+
+    selectedPlaylistsList.innerHTML = selectedPlaylists.map(playlist => `
+        <div class="selected-playlist-item">
+            <span class="playlist-name">${playlist.name}</span>
+            <span class="playlist-info">${playlist.trackCount} tracks</span>
+            <button
+                class="btn-remove-playlist"
+                onclick="removePlaylist('${playlist.id}')"
+                title="Remove playlist"
+            >×</button>
+        </div>
+    `).join('');
+}
+
+/**
+ * Add playlist to selection
+ */
+function addPlaylist(playlistId) {
+    if (!selectedPlaylistIds.includes(playlistId)) {
+        selectedPlaylistIds.push(playlistId);
+        renderPlaylists(playlistFilter.value);
+        renderSelectedPlaylists();
+        console.log('Added playlist:', playlistId);
+    }
+}
+
+/**
+ * Remove playlist from selection
+ */
+function removePlaylist(playlistId) {
+    const index = selectedPlaylistIds.indexOf(playlistId);
+    if (index !== -1) {
+        selectedPlaylistIds.splice(index, 1);
+        renderPlaylists(playlistFilter.value);
+        renderSelectedPlaylists();
+        console.log('Removed playlist:', playlistId);
+    }
 }
 
 /**
@@ -408,4 +481,5 @@ function showStatus(message, type = 'info') {
 window.removeTeam = removeTeam;
 window.updateTeamMembers = updateTeamMembers;
 window.updateTeamName = updateTeamName;
-window.togglePlaylist = togglePlaylist;
+window.addPlaylist = addPlaylist;
+window.removePlaylist = removePlaylist;

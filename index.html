@@ -84,11 +84,29 @@
 
                     <div class="input-group hidden" id="playlist-selector-group">
                         <label>Select Playlists:</label>
+
+                        <!-- Search/Filter -->
+                        <input
+                            type="text"
+                            id="playlist-filter"
+                            class="playlist-filter hidden"
+                            placeholder="Search playlists..."
+                        />
+
+                        <!-- Available Playlists -->
                         <div id="playlists-loading" class="loading-message">Loading playlists...</div>
                         <div id="playlists-list" class="playlists-list hidden">
-                            <!-- Playlists will be dynamically added here -->
+                            <!-- Available playlists will be dynamically added here -->
                         </div>
                         <div id="playlists-empty" class="empty-state hidden">No playlists found</div>
+
+                        <!-- Selected Playlists -->
+                        <div id="selected-playlists-section" class="hidden">
+                            <label class="selected-label">Selected Playlists:</label>
+                            <div id="selected-playlists-list" class="selected-playlists-list">
+                                <!-- Selected playlists will be dynamically added here -->
+                            </div>
+                        </div>
                     </div>
 
                     <div class="input-group">
