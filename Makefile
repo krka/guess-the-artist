@@ -50,6 +50,7 @@ deploy:
 	@rsync -av --delete \
 		--include='*.html' \
 		--include='README.md' \
+		--include='src/***' \
 		--exclude='*' \
 		. gh-pages/
 	@echo ""
