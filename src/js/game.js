@@ -131,7 +131,10 @@ async function fetchArtists() {
                 artists.forEach(artist => artistsMap.set(artist.id, artist));
             } else if (source === '__playlists__') {
                 console.log('Fetching artists from playlists...', gameConfig.playlistIds);
-                const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds);
+                const progressCallback = (detail) => {
+                    showStatus(`Loading artists... (${currentSource}/${totalSources}: ${sourceName} - ${detail})`, 'info');
+                };
+                const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
                 console.log(`Got ${artists.length} artists from playlists`);
                 artists.forEach(artist => artistsMap.set(artist.id, artist));
             }
@@ -243,6 +246,9 @@ function showReadyPhase() {
 
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
+
+    console.log('showReadyPhase - gameConfig:', gameConfig);
+    console.log('showReadyPhase - playerDuration:', gameConfig.playerDuration);
 
     document.getElementById('ready-player-name').textContent = player;
     document.getElementById('ready-team-name').textContent = team.name;

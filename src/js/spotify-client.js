@@ -474,7 +474,7 @@ class SpotifyClient {
     /**
      * Get artists from a playlist
      */
-    async getArtistsFromPlaylist(playlistId) {
+    async getArtistsFromPlaylist(playlistId, progressCallback) {
         await this.ensureAuthenticated();
 
         const artistsMap = new Map();
@@ -482,8 +482,14 @@ class SpotifyClient {
         try {
             // Fetch all tracks from playlist (might need pagination)
             let url = `${this.config.apiBaseUrl}/playlists/${playlistId}/tracks?limit=100`;
+            let pageNum = 0;
 
             while (url) {
+                pageNum++;
+                if (progressCallback) {
+                    progressCallback(`Fetching tracks (page ${pageNum})...`);
+                }
+
                 const response = await fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${this.accessToken}`,
@@ -517,9 +523,15 @@ class SpotifyClient {
             // Fetch full artist details for each unique artist
             const artistIds = Array.from(artistsMap.keys());
             const artists = [];
+            const totalBatches = Math.ceil(artistIds.length / 50);
 
             // Fetch in batches of 50 (Spotify API limit)
             for (let i = 0; i < artistIds.length; i += 50) {
+                const batchNum = Math.floor(i / 50) + 1;
+                if (progressCallback) {
+                    progressCallback(`Fetching artist details (${batchNum}/${totalBatches})...`);
+                }
+
                 const batch = artistIds.slice(i, i + 50);
                 const batchUrl = `${this.config.apiBaseUrl}/artists?ids=${batch.join(',')}`;
 
@@ -559,11 +571,21 @@ class SpotifyClient {
     /**
      * Get artists from multiple playlists
      */
-    async getArtistsFromPlaylists(playlistIds) {
+    async getArtistsFromPlaylists(playlistIds, progressCallback) {
         const artistsMap = new Map();
 
-        for (const playlistId of playlistIds) {
-            const artists = await this.getArtistsFromPlaylist(playlistId);
+        for (let i = 0; i < playlistIds.length; i++) {
+            const playlistId = playlistIds[i];
+            const playlistNum = i + 1;
+            const totalPlaylists = playlistIds.length;
+
+            const playlistProgress = (detail) => {
+                if (progressCallback) {
+                    progressCallback(`Playlist ${playlistNum}/${totalPlaylists}: ${detail}`);
+                }
+            };
+
+            const artists = await this.getArtistsFromPlaylist(playlistId, playlistProgress);
             artists.forEach(artist => {
                 if (!artistsMap.has(artist.id)) {
                     artistsMap.set(artist.id, artist);
