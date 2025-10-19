@@ -17,6 +17,7 @@ let gameState = {
     currentArtistStartTime: null,
     timerInterval: null,
     remainingTime: 0,
+    initialRoundDuration: 0,  // Track the actual duration for this round (for progress bar)
     phase: 'ready'
 };
 
@@ -296,11 +297,13 @@ function startRound() {
     if (gameConfig.gameMode === 'swap-places') {
         // Swap Places mode: use total team duration
         gameState.remainingTime = gameConfig.playerDuration * team.members.length;
+        gameState.initialRoundDuration = gameState.remainingTime;
         // Reset singer index at start of team's round
         gameState.currentSingerIndex = 0;
     } else {
         // Individual mode: use player duration
         gameState.remainingTime = gameConfig.playerDuration;
+        gameState.initialRoundDuration = gameState.remainingTime;
     }
 
     gameState.roundStartTime = Date.now();
@@ -384,8 +387,8 @@ function updateTimerDisplay() {
     const timerElement = document.getElementById('timer');
     timerElement.textContent = gameState.remainingTime;
 
-    // Update progress bar
-    const progress = (gameState.remainingTime / gameConfig.playerDuration) * 100;
+    // Update progress bar (use actual initial duration, not just playerDuration)
+    const progress = (gameState.remainingTime / gameState.initialRoundDuration) * 100;
     document.getElementById('progress-fill').style.width = `${progress}%`;
 
     // Color changes based on time
