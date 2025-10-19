@@ -97,8 +97,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Fetch artists
     await fetchArtists();
 
-    // Start game
-    showReadyPhase();
+    // Start game only if artists were loaded successfully
+    if (gameState.artists && gameState.artists.length > 0) {
+        showReadyPhase();
+    } else {
+        console.error('Cannot start game - no artists loaded');
+    }
 });
 
 /**
@@ -333,6 +337,12 @@ function startRound() {
  * Show current artist
  */
 function showCurrentArtist() {
+    // Safety check: ensure we have artists loaded
+    if (!gameState.artists || gameState.artists.length === 0) {
+        console.error('No artists available to show!');
+        return;
+    }
+
     if (gameState.currentArtistIndex >= gameState.artists.length) {
         // Ran out of artists - reshuffle and reuse them
         console.log('Ran out of artists, reshuffling...');
