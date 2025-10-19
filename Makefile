@@ -3,16 +3,16 @@
 # Default target
 help:
 	@echo "Available targets:"
-	@echo "  make run-local    - Start local development server on port 8000"
+	@echo "  make run-local    - Start local development server on port 8080"
 	@echo "  make clean        - Remove any temporary files"
 	@echo "  make help         - Show this help message"
 
 # Start local development server
 run-local:
-	@echo "Starting local server at http://localhost:8000"
+	@echo "Starting local server at http://localhost:8080"
 	@echo "Press Ctrl+C to stop"
 	@echo ""
-	@python3 -m http.server 8000 || python -m http.server 8000
+	@python3 -m http.server 8080 || python -m http.server 8080
 
 # Clean temporary files (if any)
 clean:

@@ -23,8 +23,8 @@ Two players team up to identify music artists. One player sings, the other guess
    - **App name**: guess-the-artist (or whatever you prefer)
    - **App description**: Music guessing game
    - **Redirect URIs**: Add all three (exact match required):
-     - `http://localhost:8000` (no trailing slash)
-     - `http://127.0.0.1:8000` (no trailing slash)
+     - `http://localhost:8080` (no trailing slash - port 8080 to avoid HTTPS issues)
+     - `http://127.0.0.1:8080` (no trailing slash)
      - `https://krka.github.io/guess-the-artist/` (with trailing slash)
    - **API**: Select "Web API"
 4. Click "Save"
@@ -40,26 +40,22 @@ The Client ID is already configured in `src/js/config.js`. If you're forking thi
 
 Since this is a purely frontend app, you just need a simple HTTP server:
 
-**Option 1: Using Python (most common)**
+**Using the Makefile (easiest)**:
 ```bash
-# Python 3
-python -m http.server 8000
-
-# Python 2
-python -m SimpleHTTPServer 8000
+make run-local
 ```
 
-**Option 2: Using Node.js**
+**Or manually with Python**:
 ```bash
-npx http-server -p 8000
+python3 -m http.server 8080
 ```
 
-**Option 3: Using PHP**
+**Or with Node.js**:
 ```bash
-php -S localhost:8000
+npx http-server -p 8080
 ```
 
-Then open your browser to: **http://localhost:8000**
+Then open your browser to: **http://localhost:8080**
 
 ### 4. Login and Test
 

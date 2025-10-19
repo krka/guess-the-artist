@@ -60,22 +60,22 @@ Just upload the files to any web server that serves static HTML. The app is enti
 
 For testing locally, you **must** use a web server:
 
-**Python** (easiest):
+**Makefile** (easiest):
 ```bash
-python -m http.server 8000
+make run-local
+```
+
+**Python**:
+```bash
+python3 -m http.server 8080
 ```
 
 **Node.js**:
 ```bash
-npx http-server -p 8000
+npx http-server -p 8080
 ```
 
-**PHP**:
-```bash
-php -S localhost:8000
-```
-
-Then add `http://localhost:8000` to your Spotify app's redirect URIs.
+Then add `http://localhost:8080` to your Spotify app's redirect URIs.
 
 ## Multiple Environments
 
@@ -83,10 +83,12 @@ You can have both local and production redirect URIs configured simultaneously:
 
 **Spotify Dashboard → Redirect URIs**:
 ```
-http://localhost:8000
-http://127.0.0.1:8000
+http://localhost:8080
+http://127.0.0.1:8080
 https://krka.github.io/guess-the-artist/
 ```
+
+**Note**: Port 8080 is used instead of 8000 to avoid Spotify's HTTPS requirement issues on certain ports.
 
 The app automatically uses `window.location.origin`, so it works in all environments without code changes!
 
