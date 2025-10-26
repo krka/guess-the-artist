@@ -18,7 +18,9 @@ let gameState = {
     remainingTime: 0,
     initialRoundDuration: 0,  // Track the actual duration for this round (for progress bar)
     phase: 'ready',
-    overtime: false  // True when time has run out but waiting for final guess
+    overtime: false,  // True when time has run out but waiting for final guess
+    hintTimeouts: [],  // Track hint timeouts to clear them
+    currentHintIndex: 0  // Track which hint to show next
 };
 
 // Preloaded images cache
@@ -399,8 +401,79 @@ function showCurrentArtist() {
     // Track when this artist was shown (for accurate guess timing)
     gameState.currentArtistStartTime = Date.now();
 
+    // Clear any previous hints
+    clearHints();
+
+    // Schedule hints if enabled and artist has tracks
+    if (gameConfig.showHints && artist.tracks && artist.tracks.length > 0) {
+        scheduleHints(artist.tracks);
+    }
+
     // Preload next 5 images
     preloadImages(gameState.currentArtistIndex + 1, 5);
+}
+
+/**
+ * Clear all hints and timeouts
+ */
+function clearHints() {
+    // Clear all hint timeouts
+    gameState.hintTimeouts.forEach(timeout => clearTimeout(timeout));
+    gameState.hintTimeouts = [];
+    gameState.currentHintIndex = 0;
+
+    // Hide hint marquee
+    const hintMarquee = document.getElementById('hint-marquee');
+    if (hintMarquee) {
+        hintMarquee.classList.add('hidden');
+    }
+}
+
+/**
+ * Schedule hints to appear at 5s, 15s, 25s
+ */
+function scheduleHints(tracks) {
+    // Randomize track list
+    const shuffledTracks = [...tracks];
+    shuffleArray(shuffledTracks);
+
+    // Schedule hints at 5s, 15s, 25s
+    const hintTimes = [5000, 15000, 25000];
+
+    hintTimes.forEach((time, index) => {
+        if (index < shuffledTracks.length) {
+            const timeout = setTimeout(() => {
+                showHint(shuffledTracks[index]);
+            }, time);
+            gameState.hintTimeouts.push(timeout);
+        }
+    });
+}
+
+/**
+ * Show a hint with marquee animation
+ */
+function showHint(trackName) {
+    const hintMarquee = document.getElementById('hint-marquee');
+    const hintText = document.getElementById('hint-text');
+
+    if (!hintMarquee || !hintText) return;
+
+    // Set the hint text
+    hintText.textContent = `♪ ${trackName}`;
+
+    // Show the marquee
+    hintMarquee.classList.remove('hidden');
+
+    // Restart animation by removing and re-adding class
+    hintText.classList.remove('marquee-scroll');
+    void hintText.offsetWidth; // Force reflow
+    hintText.classList.add('marquee-scroll');
+
+    // Hide after animation completes (5 seconds)
+    setTimeout(() => {
+        hintMarquee.classList.add('hidden');
+    }, 5000);
 }
 
 /**
@@ -565,6 +638,9 @@ function endRound() {
         clearInterval(gameState.timerInterval);
         gameState.timerInterval = null;
     }
+
+    // Clear any pending hints
+    clearHints();
 
     // Increment artist index so next player doesn't see the same artist (spoiler fix)
     gameState.currentArtistIndex++;

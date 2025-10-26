@@ -17,7 +17,10 @@ let gameState = {
     timerInterval: null,
     remainingTime: 0,
     initialRoundDuration: 0,  // Track the actual duration for this round (for progress bar)
-    phase: 'ready'
+    phase: 'ready',
+    overtime: false,  // True when time has run out but waiting for final guess
+    hintTimeouts: [],  // Track hint timeouts to clear them
+    currentHintIndex: 0  // Track which hint to show next
 };
 
 // Preloaded images cache
@@ -144,8 +147,20 @@ async function fetchArtists() {
 
         // Fetch artists from playlists
         console.log('Fetching artists from playlists...', gameConfig.playlistIds);
-        const progressCallback = (detail) => {
-            showStatus(`Loading artists from playlists... (${detail})`, 'info');
+        const progressCallback = (progress) => {
+            // Calculate overall progress across all playlists
+            // Formula: (current_playlist_index + stage_progress) / total_playlists
+            const playlistIndex = progress.playlistNum - 1; // Convert to 0-based
+            const stageProgress = progress.percent / 100; // Convert to 0.0-1.0
+            const stageOffset = progress.stage === 'tracks' ? 0 : 0.5; // tracks = first half, artists = second half
+
+            const overallProgress = ((playlistIndex + stageOffset + (stageProgress * 0.5)) / progress.totalPlaylists) * 100;
+
+            showStatus(
+                '', // No text, just progress bar
+                'info',
+                Math.round(overallProgress)
+            );
         };
         const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
         console.log(`Got ${artists.length} artists from playlists`);
@@ -156,6 +171,15 @@ async function fetchArtists() {
         console.log(`Fetched ${allArtists.length} unique artists from all sources`);
 
         showStatus('Processing artists...', 'info');
+
+        // Filter out artists without images (broken/missing photos)
+        const beforeImageFilter = allArtists.length;
+        allArtists = allArtists.filter(artist => {
+            return artist.image && artist.image.trim() !== '';
+        });
+        if (beforeImageFilter > allArtists.length) {
+            console.log(`Image filter: ${beforeImageFilter} → ${allArtists.length} artists (removed ${beforeImageFilter - allArtists.length} without images)`);
+        }
 
         // Filter by minimum popularity if set
         const minPopularity = gameConfig.minPopularity || 0;
@@ -264,6 +288,9 @@ function showReadyPhase() {
     hideAllPhases();
     phaseReady.classList.remove('hidden');
 
+    // Clear any lingering status messages
+    statusMessage.classList.add('hidden');
+
     const team = gameConfig.teams[gameState.currentTeamIndex];
 
     console.log('showReadyPhase - gameConfig:', gameConfig);
@@ -312,6 +339,7 @@ function startRound() {
     }
 
     gameState.roundStartTime = Date.now();
+    gameState.overtime = false;  // Reset overtime state
 
     // Reset current player's stats
     const player = team.members[gameState.currentPlayerIndex];
@@ -325,8 +353,10 @@ function startRound() {
     // Start timer
     startTimer();
 
-    // Setup buttons
-    document.getElementById('pass-button').onclick = handlePass;
+    // Setup buttons (callbacks stay the same, they check gameState.overtime)
+    const passButton = document.getElementById('pass-button');
+    passButton.textContent = 'Skip';
+    passButton.onclick = handlePass;
     document.getElementById('correct-button').onclick = handleCorrect;
 
     // Update stats display
@@ -371,8 +401,79 @@ function showCurrentArtist() {
     // Track when this artist was shown (for accurate guess timing)
     gameState.currentArtistStartTime = Date.now();
 
+    // Clear any previous hints
+    clearHints();
+
+    // Schedule hints if enabled and artist has tracks
+    if (gameConfig.showHints && artist.tracks && artist.tracks.length > 0) {
+        scheduleHints(artist.tracks);
+    }
+
     // Preload next 5 images
     preloadImages(gameState.currentArtistIndex + 1, 5);
+}
+
+/**
+ * Clear all hints and timeouts
+ */
+function clearHints() {
+    // Clear all hint timeouts
+    gameState.hintTimeouts.forEach(timeout => clearTimeout(timeout));
+    gameState.hintTimeouts = [];
+    gameState.currentHintIndex = 0;
+
+    // Hide hint marquee
+    const hintMarquee = document.getElementById('hint-marquee');
+    if (hintMarquee) {
+        hintMarquee.classList.add('hidden');
+    }
+}
+
+/**
+ * Schedule hints to appear at 5s, 15s, 25s
+ */
+function scheduleHints(tracks) {
+    // Randomize track list
+    const shuffledTracks = [...tracks];
+    shuffleArray(shuffledTracks);
+
+    // Schedule hints at 5s, 15s, 25s
+    const hintTimes = [5000, 15000, 25000];
+
+    hintTimes.forEach((time, index) => {
+        if (index < shuffledTracks.length) {
+            const timeout = setTimeout(() => {
+                showHint(shuffledTracks[index]);
+            }, time);
+            gameState.hintTimeouts.push(timeout);
+        }
+    });
+}
+
+/**
+ * Show a hint with marquee animation
+ */
+function showHint(trackName) {
+    const hintMarquee = document.getElementById('hint-marquee');
+    const hintText = document.getElementById('hint-text');
+
+    if (!hintMarquee || !hintText) return;
+
+    // Set the hint text
+    hintText.textContent = `♪ ${trackName}`;
+
+    // Show the marquee
+    hintMarquee.classList.remove('hidden');
+
+    // Restart animation by removing and re-adding class
+    hintText.classList.remove('marquee-scroll');
+    void hintText.offsetWidth; // Force reflow
+    hintText.classList.add('marquee-scroll');
+
+    // Hide after animation completes (5 seconds)
+    setTimeout(() => {
+        hintMarquee.classList.add('hidden');
+    }, 5000);
 }
 
 /**
@@ -386,7 +487,16 @@ function startTimer() {
         updateTimerDisplay();
 
         if (gameState.remainingTime <= 0) {
-            endRound();
+            // Stop the timer but keep showing the current artist
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = null;
+
+            // Enter overtime mode - buttons will check this state
+            gameState.overtime = true;
+
+            // Change Skip button to Pass
+            const passButton = document.getElementById('pass-button');
+            passButton.textContent = 'Pass';
         }
     }, 1000);
 }
@@ -396,19 +506,34 @@ function startTimer() {
  */
 function updateTimerDisplay() {
     const timerElement = document.getElementById('timer');
-    timerElement.textContent = gameState.remainingTime;
+    const displayTime = Math.max(0, gameState.remainingTime); // Don't show negative numbers
+
+    // Update just the text node, not the entire content (preserves progress bar HTML)
+    const textNode = Array.from(timerElement.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+    if (textNode) {
+        textNode.textContent = displayTime;
+    } else {
+        // First time: create text node before progress bar
+        const newTextNode = document.createTextNode(displayTime);
+        timerElement.insertBefore(newTextNode, timerElement.firstChild);
+    }
 
     // Update progress bar (use actual initial duration, not just playerDuration)
-    const progress = (gameState.remainingTime / gameState.initialRoundDuration) * 100;
-    document.getElementById('progress-fill').style.width = `${progress}%`;
+    const progress = Math.max(0, (gameState.remainingTime / gameState.initialRoundDuration) * 100);
+    const progressFill = document.getElementById('progress-fill');
+    if (progressFill) {
+        progressFill.style.width = `${progress}%`;
+    }
 
     // Color changes based on time
-    if (gameState.remainingTime <= 10) {
+    if (gameState.remainingTime <= 0) {
+        timerElement.style.color = '#e74c3c';
+    } else if (gameState.remainingTime <= 10) {
         timerElement.style.color = '#e74c3c';
     } else if (gameState.remainingTime <= 20) {
         timerElement.style.color = '#f39c12';
     } else {
-        timerElement.style.color = '#1db954';
+        timerElement.style.color = 'white';
     }
 }
 
@@ -430,6 +555,12 @@ function updateStatsDisplay() {
  * Handle pass button
  */
 function handlePass() {
+    // If in overtime, pass ends the round
+    if (gameState.overtime) {
+        endRound();
+        return;
+    }
+
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
@@ -486,6 +617,12 @@ function handleCorrect() {
         wasCorrect: true
     });
 
+    // If in overtime, correct ends the round
+    if (gameState.overtime) {
+        endRound();
+        return;
+    }
+
     // Move to next artist
     gameState.currentArtistIndex++;
     showCurrentArtist();
@@ -501,6 +638,9 @@ function endRound() {
         clearInterval(gameState.timerInterval);
         gameState.timerInterval = null;
     }
+
+    // Clear any pending hints
+    clearHints();
 
     // Increment artist index so next player doesn't see the same artist (spoiler fix)
     gameState.currentArtistIndex++;
@@ -705,37 +845,40 @@ function showGameOver() {
  * Create raining artists background animation
  */
 function createRainingArtists() {
-    // Collect all correct guesses from all players
-    const allCorrectArtists = [];
+    // Collect all unique correct guesses from all players
+    const artistsMap = new Map();
     Object.values(gameState.playerStats).forEach(stats => {
         stats.guesses.forEach(guess => {
             if (guess.wasCorrect && guess.artist.image) {
-                allCorrectArtists.push(guess.artist);
+                artistsMap.set(guess.artist.id, guess.artist);
             }
         });
     });
 
-    // If no correct answers, nothing to animate
-    if (allCorrectArtists.length === 0) return;
+    const uniqueArtists = Array.from(artistsMap.values());
 
-    // Create container for raining artists (behind the game card)
+    // If no correct answers, nothing to animate
+    if (uniqueArtists.length === 0) return;
+
+    // Create container for raining artists (fixed to viewport, behind content)
     let rainContainer = document.getElementById('rain-container');
     if (!rainContainer) {
         rainContainer = document.createElement('div');
         rainContainer.id = 'rain-container';
         rainContainer.className = 'rain-container';
-        phaseGameOver.insertBefore(rainContainer, phaseGameOver.firstChild);
+        document.body.appendChild(rainContainer);
     }
 
     // Clear any existing rain
     rainContainer.innerHTML = '';
 
-    // Show 8-12 falling artists at a time
-    const artistCount = Math.min(12, Math.max(8, allCorrectArtists.length));
+    // Shuffle and take up to 12 unique artists
+    shuffleArray(uniqueArtists);
+    const artistCount = Math.min(12, uniqueArtists.length);
 
     for (let i = 0; i < artistCount; i++) {
-        // Pick a random artist from correct answers
-        const artist = allCorrectArtists[Math.floor(Math.random() * allCorrectArtists.length)];
+        // Take the i-th unique artist (no duplicates)
+        const artist = uniqueArtists[i];
 
         const img = document.createElement('img');
         img.src = artist.image;
@@ -746,8 +889,8 @@ function createRainingArtists() {
         const xPos = Math.random() * 100;
         img.style.left = `${xPos}%`;
 
-        // Random animation duration (8-15 seconds for variety)
-        const duration = 8 + Math.random() * 7;
+        // Random animation duration (5-20 seconds for more variety)
+        const duration = 5 + Math.random() * 15;
         img.style.animationDuration = `${duration}s`;
 
         // Random delay to stagger the start (0-5 seconds)
@@ -787,10 +930,37 @@ function showErrorPhase(message, debugInfo) {
 }
 
 /**
- * Show status message
+ * Show status message with optional progress bar
  */
-function showStatus(message, type = 'info') {
-    statusMessage.textContent = message;
+function showStatus(message, type = 'info', progress = null) {
+    // Check if progress bar already exists
+    let progressBar = statusMessage.querySelector('.status-progress-bar');
+
+    if (progress !== null) {
+        // Show message with progress bar
+        const textSpan = statusMessage.querySelector('.status-text') || document.createElement('div');
+        textSpan.className = 'status-text';
+        textSpan.textContent = message;
+
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'status-progress-bar';
+            const fill = document.createElement('div');
+            fill.className = 'status-progress-fill';
+            progressBar.appendChild(fill);
+        }
+
+        const fill = progressBar.querySelector('.status-progress-fill');
+        fill.style.width = `${progress}%`;
+
+        statusMessage.innerHTML = '';
+        statusMessage.appendChild(textSpan);
+        statusMessage.appendChild(progressBar);
+    } else {
+        // Simple text message
+        statusMessage.textContent = message;
+    }
+
     statusMessage.className = type;
     statusMessage.classList.remove('hidden');
 
