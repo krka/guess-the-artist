@@ -12,7 +12,7 @@ help:
 
 # Start local HTTPS development server
 run-local:
-	@python3 server.py || python server.py
+	@python3 server.py
 
 # One-time setup for gh-pages deployment
 deploy-setup:

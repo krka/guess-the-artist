@@ -110,7 +110,10 @@ function setupEventListeners() {
 
     const gameModeSelect = document.getElementById('game-mode');
     if (gameModeSelect) {
-        gameModeSelect.addEventListener('change', saveState);
+        gameModeSelect.addEventListener('change', () => {
+            saveState();
+            updateReviewSummary();
+        });
     }
 
     // Search playlists
@@ -375,23 +378,18 @@ function toggleTeam(teamId, enabled) {
  * Update start button state
  */
 function updateStartButtonState() {
-    // Enable start button if at least one enabled, non-empty team has at least 2 members
+    // Start button is always enabled now - we'll handle validation in startGame()
+    startGameButton.disabled = false;
+
+    // Update button text to show team count if there are valid teams
     const validTeams = teams.filter(team =>
         team.enabled !== false &&
         team.members.length >= 2
     );
 
-    startGameButton.disabled = validTeams.length === 0;
-
-    // Update button text to show team count
     if (validTeams.length === 0) {
         startGameButton.textContent = 'Start Game';
-        const enabledTeams = teams.filter(team => team.enabled !== false);
-        if (enabledTeams.length === 0) {
-            startGameButton.title = 'Enable at least one team to start';
-        } else {
-            startGameButton.title = 'Each enabled team needs at least 2 players';
-        }
+        startGameButton.title = '';
     } else {
         const teamText = validTeams.length === 1 ? 'team' : 'teams';
         startGameButton.textContent = `Start Game (${validTeams.length} ${teamText})`;
@@ -765,25 +763,56 @@ async function startGame() {
     }
 
     // Filter to only enabled, non-empty teams with at least 2 players
-    const validTeams = teams.filter(team =>
+    let validTeams = teams.filter(team =>
         team.enabled !== false &&
         team.members.length >= 2
     );
 
-    // Warn if any teams were filtered out
-    const filteredOutTeams = teams.filter(team =>
-        team.enabled === false || team.members.length < 2
-    );
-    if (filteredOutTeams.length > 0) {
-        const reasons = filteredOutTeams.map(team => {
-            const teamLabel = team.members.length > 0 ? team.members.join(' & ') : 'Empty team';
-            if (team.enabled === false) {
-                return `${teamLabel}: disabled`;
-            } else if (team.members.length < 2) {
-                return `${teamLabel}: only ${team.members.length} player(s)`;
-            }
-        }).join(', ');
-        console.warn('Teams excluded from game:', reasons);
+    // If no valid teams, create default teams based on game mode
+    if (validTeams.length === 0) {
+        if (gameMode === 'swap-places') {
+            // For swap-places mode, create a single team with no player names
+            // The game will handle role swapping without needing names
+            validTeams = [{
+                id: 'default-team',
+                name: 'Team',
+                members: ['Player 1', 'Player 2'],
+                enabled: true
+            }];
+        } else {
+            // For individual mode, create 2 default players
+            validTeams = [
+                {
+                    id: 'default-player-1',
+                    name: 'Player 1',
+                    members: ['Player 1'],
+                    enabled: true
+                },
+                {
+                    id: 'default-player-2',
+                    name: 'Player 2',
+                    members: ['Player 2'],
+                    enabled: true
+                }
+            ];
+        }
+        console.log('No teams configured, using default setup');
+    } else {
+        // Warn if any teams were filtered out
+        const filteredOutTeams = teams.filter(team =>
+            team.enabled === false || team.members.length < 2
+        );
+        if (filteredOutTeams.length > 0) {
+            const reasons = filteredOutTeams.map(team => {
+                const teamLabel = team.members.length > 0 ? team.members.join(' & ') : 'Empty team';
+                if (team.enabled === false) {
+                    return `${teamLabel}: disabled`;
+                } else if (team.members.length < 2) {
+                    return `${teamLabel}: only ${team.members.length} player(s)`;
+                }
+            }).join(', ');
+            console.warn('Teams excluded from game:', reasons);
+        }
     }
 
     console.log('Valid teams for game:', validTeams.map(t => `${t.members.join(' & ')} (${t.members.length} players)`).join(', '));
@@ -838,8 +867,14 @@ function updateReviewSummary() {
 
     // Teams summary
     const validTeams = teams.filter(team => team.enabled !== false && team.members.length >= 2);
+    const gameMode = document.getElementById('game-mode').value;
+
     if (validTeams.length === 0) {
-        reviewTeams.innerHTML = '<p style="color: #b3b3b3;">No teams configured</p>';
+        if (gameMode === 'swap-places') {
+            reviewTeams.innerHTML = '<p style="color: #b3b3b3;">Default: 2 players (swap places mode)</p>';
+        } else {
+            reviewTeams.innerHTML = '<p style="color: #b3b3b3;">Default: Player 1, Player 2</p>';
+        }
     } else {
         const teamsHtml = validTeams.map(team => {
             const membersList = team.members.join(', ');
@@ -902,8 +937,8 @@ function switchTab(tabName) {
         }
     });
 
-    // Update review summary when switching to review tab
-    if (tabName === 'review') {
+    // Update review summary when switching to play tab
+    if (tabName === 'play') {
         updateReviewSummary();
     }
 }

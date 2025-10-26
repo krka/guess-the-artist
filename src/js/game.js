@@ -157,6 +157,15 @@ async function fetchArtists() {
 
         showStatus('Processing artists...', 'info');
 
+        // Filter out artists without images (broken/missing photos)
+        const beforeImageFilter = allArtists.length;
+        allArtists = allArtists.filter(artist => {
+            return artist.image && artist.image.trim() !== '';
+        });
+        if (beforeImageFilter > allArtists.length) {
+            console.log(`Image filter: ${beforeImageFilter} → ${allArtists.length} artists (removed ${beforeImageFilter - allArtists.length} without images)`);
+        }
+
         // Filter by minimum popularity if set
         const minPopularity = gameConfig.minPopularity || 0;
         if (minPopularity > 0) {
