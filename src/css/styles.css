@@ -976,7 +976,7 @@ select:focus {
 
 .timer-overlay {
     position: absolute;
-    top: 20px;
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -1418,7 +1418,7 @@ select:focus {
     }
 
     .timer-overlay {
-        top: 15px;
+        bottom: 15px;
     }
 
     .artist-image-large {
