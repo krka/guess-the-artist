@@ -135,6 +135,26 @@ h1 {
     background-color: #3498db;
 }
 
+.status-text {
+    margin-bottom: 10px;
+}
+
+.status-progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.status-progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(29, 185, 84, 0.3);
+}
+
 .artists-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -860,16 +880,30 @@ select:focus {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .game-card {
     background-color: var(--card-bg);
     padding: 40px;
     border-radius: var(--border-radius);
+    position: relative;
+    z-index: 1;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     text-align: center;
     max-width: 800px;
     width: 100%;
+}
+
+#phase-playing .game-card {
+    padding-top: 20px;
+    padding-bottom: 10px;
+}
+
+/* Content inside game-card needs to be above rain */
+.game-card > * {
+    position: relative;
+    z-index: 10;
 }
 
 /* Timer Section */
@@ -878,10 +912,18 @@ select:focus {
 }
 
 .timer {
-    font-size: 4rem;
+    font-size: 1.2rem;
     font-weight: bold;
-    color: var(--primary-color);
-    margin-bottom: 15px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 8px 15px;
+    border-radius: 25px;
+    width: 100%; /* Fill the timer-overlay container */
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
 }
 
 .progress-bar {
@@ -900,26 +942,78 @@ select:focus {
 
 /* Artist Display */
 .artist-display {
-    margin-bottom: 30px;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: calc(100vh - 90px); /* Full viewport minus fixed buttons */
+    justify-content: center;
+    padding: 0;
 }
 
 .artist-image-container {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    width: 100%;
 }
 
 .artist-image-large {
-    width: 300px;
-    height: 300px;
+    width: 100%;
+    max-width: 800px;
+    /* Calculate max-height to fit everything on screen:
+       100vh - fixed buttons (18px padding × 2 + 1.2rem font × 1.5 line-height + 15px container padding × 2 ≈ 85px)
+             - artist name (2.5rem × 1.2 line-height + 20px margin-top + 10px margin-bottom ≈ 80px)
+             - popularity text (0.9rem + margins ≈ 25px)
+             - card padding and spacing (≈ 50px)
+       Total: ~240px */
+    max-height: min(800px, calc(100vh - 240px));
     object-fit: cover;
     border-radius: var(--border-radius);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
+.timer-overlay {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: 90%;
+    max-width: 700px;
+    display: flex;
+    justify-content: center;
+}
+
+.timer .progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    border-radius: 50px;
+    z-index: -1;
+}
+
+.timer .progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 50px;
+    opacity: 0.4;
+}
+
 .artist-name-large {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: bold;
     color: var(--primary-color);
-    margin-top: 20px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    line-height: 1.2;
+    max-height: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .artist-popularity {
@@ -938,6 +1032,33 @@ select:focus {
 
 .game-controls .btn-large {
     flex: 1;
+}
+
+.game-controls-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--card-bg);
+    padding: 15px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    margin-bottom: 0;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 20px 20px 0 0;
+}
+
+.game-controls-fixed .btn-secondary {
+    background-color: #404040;
+    color: white;
+    border: none;
+}
+
+.game-controls-fixed .btn-secondary:hover {
+    background-color: #505050;
+    color: white;
 }
 
 /* Game Stats */
@@ -1292,21 +1413,40 @@ select:focus {
 
     /* Game view optimizations */
     .timer {
-        font-size: 2.5rem;
+        font-size: 1rem;
+        padding: 6px 12px;
+    }
+
+    .timer-overlay {
+        bottom: 15px;
     }
 
     .artist-image-large {
-        width: 200px;
-        height: 200px;
+        width: 100%;
+        max-width: 100%;
+        /* On mobile, tighter spacing - recalculate:
+           100vh - buttons (85px) - artist name (2rem × 1.2 + margins ≈ 65px)
+                 - popularity (25px) - card padding reduced (15px × 2 = 30px) - extra spacing (15px)
+           Total: ~220px */
+        max-height: calc(100vh - 220px);
+    }
+
+    .game-card {
+        padding: 15px;
+    }
+
+    #phase-playing .game-card {
+        padding-top: 5px;
+        padding-bottom: 0;
     }
 
     .artist-name-large {
-        font-size: 1.3rem;
+        font-size: 2rem;
     }
 
     .artist-popularity {
-        font-size: 0.8rem;
-        margin-top: 5px;
+        font-size: 0.85rem;
+        margin-top: 8px;
     }
 
     .player-name {
@@ -1321,5 +1461,57 @@ select:focus {
         flex-direction: column;
         gap: 8px;
         font-size: 1rem;
+    }
+}
+
+/* Review Summary */
+.review-summary {
+    padding: 10px 0;
+}
+
+.summary-section {
+    background-color: var(--secondary-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid #404040;
+}
+
+.summary-content p {
+    line-height: 1.6;
+}
+
+/* ===================================
+   Raining Artists Animation (Game Over)
+   =================================== */
+
+.rain-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.rain-artist {
+    position: absolute;
+    top: -100px;
+    opacity: 0.3;
+    border-radius: 50%;
+    object-fit: cover;
+    animation: fall linear infinite;
+    pointer-events: none;
+}
+
+@keyframes fall {
+    0% {
+        top: -100px;
+        transform: rotate(0deg);
+    }
+    100% {
+        top: 100vh;
+        transform: rotate(360deg);
     }
 }

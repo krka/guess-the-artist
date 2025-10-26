@@ -7,20 +7,14 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Guess the Artist</title>
-    <link rel="stylesheet" href="v/ce78a18/src/css/styles.css?v=1761499503">
+    <link rel="stylesheet" href="v/86caf1e/src/css/styles.css?v=1761509692">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Guess the Artist</h1>
-            <p class="subtitle">A Music Guessing Game</p>
-            <p class="debug-link"><a href="debug.html">Debug View</a></p>
-        </header>
-
         <!-- Login Section (shown when not authenticated) -->
         <section class="auth-section hidden" id="auth-section">
             <div class="auth-card">
-                <h2>Welcome!</h2>
+                <h2>Guess the Artist</h2>
                 <p>Connect with Spotify to play with your personalized music collection.</p>
                 <button id="login-button" class="btn-primary">Login with Spotify</button>
             </div>
@@ -28,13 +22,8 @@
 
         <!-- Game Setup Section (shown when authenticated) -->
         <section class="game-setup hidden" id="game-setup-section">
-            <div class="user-info" id="user-info">
-                <span id="user-name">Loading...</span>
-            </div>
 
             <div class="setup-card">
-                <h2>Game Setup</h2>
-
                 <!-- Tab Navigation -->
                 <div class="tab-nav">
                     <button class="tab-button active" data-tab="teams" onclick="switchTab('teams')">
@@ -46,8 +35,8 @@
                     <button class="tab-button" data-tab="settings" onclick="switchTab('settings')">
                         Settings
                     </button>
-                    <button class="tab-button" data-tab="review" onclick="switchTab('review')">
-                        Review
+                    <button class="tab-button" data-tab="play" onclick="switchTab('play')">
+                        Play
                     </button>
                 </div>
 
@@ -190,10 +179,12 @@
                             </div>
                         </div>
 
-                        <!-- Tab 4: Review & Start -->
-                        <div class="tab-pane" id="tab-review">
+                        <!-- Tab 4: Play -->
+                        <div class="tab-pane" id="tab-play">
                             <div class="review-summary">
-                                <h3 style="color: var(--primary-color); margin-bottom: 20px;">Ready to Play?</h3>
+                                <div style="margin-bottom: 30px;">
+                                    <button id="start-game-button" class="btn-primary btn-large">Start Game</button>
+                                </div>
 
                                 <div class="summary-section">
                                     <h4 style="color: #b3b3b3; font-size: 1rem; margin-bottom: 10px;">Teams</h4>
@@ -215,10 +206,6 @@
                                         <!-- Settings summary will be populated here -->
                                     </div>
                                 </div>
-
-                                <div style="margin-top: 30px;">
-                                    <button id="start-game-button" class="btn-primary btn-large" disabled>Start Game</button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -233,13 +220,13 @@
 
         <!-- Version Info -->
         <footer style="text-align: center; padding: 20px 0; font-size: 0.75rem; color: #666;">
-            <span id="version-info">Version: ce78a18 (2025-10-26 18:25:03)</span>
+            <span id="version-info">Version: 86caf1e (2025-10-26 21:14:52)</span>
         </footer>
     </div>
 
     <!-- Load scripts in order -->
-    <script src="v/ce78a18/src/js/config.js?v=1761499503"></script>
-    <script src="v/ce78a18/src/js/spotify-client.js?v=1761499503"></script>
-    <script src="v/ce78a18/src/js/game-setup.js?v=1761499503"></script>
+    <script src="v/86caf1e/src/js/config.js?v=1761509692"></script>
+    <script src="v/86caf1e/src/js/spotify-client.js?v=1761509692"></script>
+    <script src="v/86caf1e/src/js/game-setup.js?v=1761509692"></script>
 </body>
 </html>

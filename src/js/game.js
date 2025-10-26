@@ -17,7 +17,8 @@ let gameState = {
     timerInterval: null,
     remainingTime: 0,
     initialRoundDuration: 0,  // Track the actual duration for this round (for progress bar)
-    phase: 'ready'
+    phase: 'ready',
+    overtime: false  // True when time has run out but waiting for final guess
 };
 
 // Preloaded images cache
@@ -144,8 +145,20 @@ async function fetchArtists() {
 
         // Fetch artists from playlists
         console.log('Fetching artists from playlists...', gameConfig.playlistIds);
-        const progressCallback = (detail) => {
-            showStatus(`Loading artists from playlists... (${detail})`, 'info');
+        const progressCallback = (progress) => {
+            // Calculate overall progress across all playlists
+            // Formula: (current_playlist_index + stage_progress) / total_playlists
+            const playlistIndex = progress.playlistNum - 1; // Convert to 0-based
+            const stageProgress = progress.percent / 100; // Convert to 0.0-1.0
+            const stageOffset = progress.stage === 'tracks' ? 0 : 0.5; // tracks = first half, artists = second half
+
+            const overallProgress = ((playlistIndex + stageOffset + (stageProgress * 0.5)) / progress.totalPlaylists) * 100;
+
+            showStatus(
+                '', // No text, just progress bar
+                'info',
+                Math.round(overallProgress)
+            );
         };
         const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
         console.log(`Got ${artists.length} artists from playlists`);
@@ -156,6 +169,15 @@ async function fetchArtists() {
         console.log(`Fetched ${allArtists.length} unique artists from all sources`);
 
         showStatus('Processing artists...', 'info');
+
+        // Filter out artists without images (broken/missing photos)
+        const beforeImageFilter = allArtists.length;
+        allArtists = allArtists.filter(artist => {
+            return artist.image && artist.image.trim() !== '';
+        });
+        if (beforeImageFilter > allArtists.length) {
+            console.log(`Image filter: ${beforeImageFilter} → ${allArtists.length} artists (removed ${beforeImageFilter - allArtists.length} without images)`);
+        }
 
         // Filter by minimum popularity if set
         const minPopularity = gameConfig.minPopularity || 0;
@@ -315,6 +337,7 @@ function startRound() {
     }
 
     gameState.roundStartTime = Date.now();
+    gameState.overtime = false;  // Reset overtime state
 
     // Reset current player's stats
     const player = team.members[gameState.currentPlayerIndex];
@@ -328,8 +351,10 @@ function startRound() {
     // Start timer
     startTimer();
 
-    // Setup buttons
-    document.getElementById('pass-button').onclick = handlePass;
+    // Setup buttons (callbacks stay the same, they check gameState.overtime)
+    const passButton = document.getElementById('pass-button');
+    passButton.textContent = 'Skip';
+    passButton.onclick = handlePass;
     document.getElementById('correct-button').onclick = handleCorrect;
 
     // Update stats display
@@ -389,7 +414,16 @@ function startTimer() {
         updateTimerDisplay();
 
         if (gameState.remainingTime <= 0) {
-            endRound();
+            // Stop the timer but keep showing the current artist
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = null;
+
+            // Enter overtime mode - buttons will check this state
+            gameState.overtime = true;
+
+            // Change Skip button to Pass
+            const passButton = document.getElementById('pass-button');
+            passButton.textContent = 'Pass';
         }
     }, 1000);
 }
@@ -399,19 +433,34 @@ function startTimer() {
  */
 function updateTimerDisplay() {
     const timerElement = document.getElementById('timer');
-    timerElement.textContent = gameState.remainingTime;
+    const displayTime = Math.max(0, gameState.remainingTime); // Don't show negative numbers
+
+    // Update just the text node, not the entire content (preserves progress bar HTML)
+    const textNode = Array.from(timerElement.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+    if (textNode) {
+        textNode.textContent = displayTime;
+    } else {
+        // First time: create text node before progress bar
+        const newTextNode = document.createTextNode(displayTime);
+        timerElement.insertBefore(newTextNode, timerElement.firstChild);
+    }
 
     // Update progress bar (use actual initial duration, not just playerDuration)
-    const progress = (gameState.remainingTime / gameState.initialRoundDuration) * 100;
-    document.getElementById('progress-fill').style.width = `${progress}%`;
+    const progress = Math.max(0, (gameState.remainingTime / gameState.initialRoundDuration) * 100);
+    const progressFill = document.getElementById('progress-fill');
+    if (progressFill) {
+        progressFill.style.width = `${progress}%`;
+    }
 
     // Color changes based on time
-    if (gameState.remainingTime <= 10) {
+    if (gameState.remainingTime <= 0) {
+        timerElement.style.color = '#e74c3c';
+    } else if (gameState.remainingTime <= 10) {
         timerElement.style.color = '#e74c3c';
     } else if (gameState.remainingTime <= 20) {
         timerElement.style.color = '#f39c12';
     } else {
-        timerElement.style.color = '#1db954';
+        timerElement.style.color = 'white';
     }
 }
 
@@ -433,6 +482,12 @@ function updateStatsDisplay() {
  * Handle pass button
  */
 function handlePass() {
+    // If in overtime, pass ends the round
+    if (gameState.overtime) {
+        endRound();
+        return;
+    }
+
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
@@ -488,6 +543,12 @@ function handleCorrect() {
         time: guessTime,
         wasCorrect: true
     });
+
+    // If in overtime, correct ends the round
+    if (gameState.overtime) {
+        endRound();
+        return;
+    }
 
     // Move to next artist
     gameState.currentArtistIndex++;
@@ -793,10 +854,37 @@ function showErrorPhase(message, debugInfo) {
 }
 
 /**
- * Show status message
+ * Show status message with optional progress bar
  */
-function showStatus(message, type = 'info') {
-    statusMessage.textContent = message;
+function showStatus(message, type = 'info', progress = null) {
+    // Check if progress bar already exists
+    let progressBar = statusMessage.querySelector('.status-progress-bar');
+
+    if (progress !== null) {
+        // Show message with progress bar
+        const textSpan = statusMessage.querySelector('.status-text') || document.createElement('div');
+        textSpan.className = 'status-text';
+        textSpan.textContent = message;
+
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'status-progress-bar';
+            const fill = document.createElement('div');
+            fill.className = 'status-progress-fill';
+            progressBar.appendChild(fill);
+        }
+
+        const fill = progressBar.querySelector('.status-progress-fill');
+        fill.style.width = `${progress}%`;
+
+        statusMessage.innerHTML = '';
+        statusMessage.appendChild(textSpan);
+        statusMessage.appendChild(progressBar);
+    } else {
+        // Simple text message
+        statusMessage.textContent = message;
+    }
+
     statusMessage.className = type;
     statusMessage.classList.remove('hidden');
 

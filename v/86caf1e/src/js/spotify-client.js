@@ -518,14 +518,10 @@ class SpotifyClient {
         try {
             // Fetch all tracks from playlist (might need pagination)
             let url = `${this.config.apiBaseUrl}/playlists/${playlistId}/tracks?limit=100`;
-            let pageNum = 0;
+            let totalTracks = 0;
+            let fetchedTracks = 0;
 
             while (url) {
-                pageNum++;
-                if (progressCallback) {
-                    progressCallback(`Fetching tracks (page ${pageNum})...`);
-                }
-
                 const response = await fetch(url, {
                     headers: {
                         'Authorization': `Bearer ${this.accessToken}`,
@@ -537,6 +533,11 @@ class SpotifyClient {
                 }
 
                 const data = await response.json();
+
+                // Set total on first page
+                if (totalTracks === 0) {
+                    totalTracks = data.total;
+                }
 
                 // Extract unique artists (primary artist only, skip features)
                 data.items.forEach(item => {
@@ -552,6 +553,14 @@ class SpotifyClient {
                     }
                 });
 
+                fetchedTracks += data.items.length;
+
+                // Report progress as percentage
+                if (progressCallback && totalTracks > 0) {
+                    const percent = Math.round((fetchedTracks / totalTracks) * 100);
+                    progressCallback({ stage: 'tracks', percent });
+                }
+
                 // Get next page if available
                 url = data.next;
             }
@@ -563,11 +572,6 @@ class SpotifyClient {
 
             // Fetch in batches of 50 (Spotify API limit)
             for (let i = 0; i < artistIds.length; i += 50) {
-                const batchNum = Math.floor(i / 50) + 1;
-                if (progressCallback) {
-                    progressCallback(`Fetching artist details (${batchNum}/${totalBatches})...`);
-                }
-
                 const batch = artistIds.slice(i, i + 50);
                 const batchUrl = `${this.config.apiBaseUrl}/artists?ids=${batch.join(',')}`;
 
@@ -595,6 +599,12 @@ class SpotifyClient {
                         });
                     }
                 });
+
+                // Report progress as percentage for artist details
+                if (progressCallback) {
+                    const percent = Math.round(((i + 50) / artistIds.length) * 100);
+                    progressCallback({ stage: 'artists', percent: Math.min(percent, 100) });
+                }
             }
 
             return artists;
@@ -615,9 +625,14 @@ class SpotifyClient {
             const playlistNum = i + 1;
             const totalPlaylists = playlistIds.length;
 
-            const playlistProgress = (detail) => {
+            const playlistProgress = (progress) => {
                 if (progressCallback) {
-                    progressCallback(`Playlist ${playlistNum}/${totalPlaylists}: ${detail}`);
+                    progressCallback({
+                        playlistNum,
+                        totalPlaylists,
+                        stage: progress.stage,
+                        percent: progress.percent
+                    });
                 }
             };
 
