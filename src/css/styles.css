@@ -1333,6 +1333,22 @@ select:focus {
     }
 }
 
+/* Review Summary */
+.review-summary {
+    padding: 10px 0;
+}
+
+.summary-section {
+    background-color: var(--secondary-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid #404040;
+}
+
+.summary-content p {
+    line-height: 1.6;
+}
+
 /* ===================================
    Raining Artists Animation (Game Over)
    =================================== */

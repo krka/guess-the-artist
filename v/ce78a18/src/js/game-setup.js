@@ -316,6 +316,7 @@ function updateTeamMembers(teamId, membersText) {
                 .filter(m => m.length > 0);
         }
         updateStartButtonState();
+        updateReviewSummary();
         saveState();
     }
 }
@@ -326,6 +327,7 @@ function updateTeamMembers(teamId, membersText) {
 function renderTeams() {
     if (teams.length === 0) {
         teamsList.innerHTML = '<p class="empty-state">No teams yet. Click "+ New Team" to get started!</p>';
+        updateReviewSummary();
         return;
     }
 
@@ -353,6 +355,7 @@ function renderTeams() {
             />
         </div>
     `).join('');
+    updateReviewSummary();
 }
 
 /**
@@ -487,12 +490,17 @@ function renderPlaylists(filterQuery = '') {
  * Render selected playlists
  */
 function renderSelectedPlaylists() {
-    if (selectedPlaylistIds.length === 0) {
-        selectedPlaylistsSection.classList.add('hidden');
-        return;
+    // Update the selected count in the tab label
+    const selectedTabLabel = document.getElementById('selected-tab-label');
+    if (selectedTabLabel) {
+        selectedTabLabel.textContent = `Selected (${selectedPlaylistIds.length})`;
     }
 
-    selectedPlaylistsSection.classList.remove('hidden');
+    if (selectedPlaylistIds.length === 0) {
+        selectedPlaylistsList.innerHTML = '<div class="empty-state">No sources selected yet</div>';
+        updateReviewSummary();
+        return;
+    }
 
     let html = '';
 
@@ -502,9 +510,11 @@ function renderSelectedPlaylists() {
         const playlist = userPlaylists.find(p => p.id === id);
         if (playlist) {
             html += `
-                <div class="selected-playlist-item">
-                    <span class="playlist-name">${playlist.name}</span>
-                    <span class="playlist-info">${playlist.trackCount} tracks</span>
+                <div class="playlist-item">
+                    <div class="playlist-item-content">
+                        <span class="playlist-name">${playlist.name}</span>
+                        <span class="playlist-info">${playlist.trackCount} tracks</span>
+                    </div>
                     <button
                         class="btn-remove-playlist"
                         onclick="removePlaylist('${playlist.id}')"
@@ -517,9 +527,11 @@ function renderSelectedPlaylists() {
             const prevPlaylist = previouslyUsedPlaylists.find(p => p.id === id);
             if (prevPlaylist) {
                 html += `
-                    <div class="selected-playlist-item">
-                        <span class="playlist-name">${prevPlaylist.name}</span>
-                        <span class="playlist-info">${prevPlaylist.trackCount} tracks • by ${prevPlaylist.owner}</span>
+                    <div class="playlist-item">
+                        <div class="playlist-item-content">
+                            <span class="playlist-name">${prevPlaylist.name}</span>
+                            <span class="playlist-info">${prevPlaylist.trackCount} tracks • by ${prevPlaylist.owner}</span>
+                        </div>
                         <button
                             class="btn-remove-playlist"
                             onclick="removePlaylist('${prevPlaylist.id}')"
@@ -532,6 +544,7 @@ function renderSelectedPlaylists() {
     });
 
     selectedPlaylistsList.innerHTML = html;
+    updateReviewSummary();
 }
 
 /**
@@ -812,6 +825,62 @@ function showStatus(message, type = 'info') {
 }
 
 /**
+ * Update review summary
+ */
+function updateReviewSummary() {
+    const reviewTeams = document.getElementById('review-teams');
+    const reviewSources = document.getElementById('review-sources');
+    const reviewSettings = document.getElementById('review-settings');
+
+    if (!reviewTeams || !reviewSources || !reviewSettings) {
+        return;
+    }
+
+    // Teams summary
+    const validTeams = teams.filter(team => team.enabled !== false && team.members.length >= 2);
+    if (validTeams.length === 0) {
+        reviewTeams.innerHTML = '<p style="color: #b3b3b3;">No teams configured</p>';
+    } else {
+        const teamsHtml = validTeams.map(team => {
+            const membersList = team.members.join(', ');
+            return `<p style="color: var(--text-color); margin-bottom: 8px;">• ${membersList}</p>`;
+        }).join('');
+        reviewTeams.innerHTML = teamsHtml;
+    }
+
+    // Sources summary
+    if (selectedPlaylistIds.length === 0) {
+        reviewSources.innerHTML = '<p style="color: #b3b3b3;">No sources selected</p>';
+    } else {
+        const sourcesHtml = selectedPlaylistIds.map(id => {
+            const playlist = userPlaylists.find(p => p.id === id);
+            if (playlist) {
+                return `<p style="color: var(--text-color); margin-bottom: 8px;">• ${playlist.name} <span style="color: #b3b3b3;">(${playlist.trackCount} tracks)</span></p>`;
+            }
+            const prevPlaylist = previouslyUsedPlaylists.find(p => p.id === id);
+            if (prevPlaylist) {
+                return `<p style="color: var(--text-color); margin-bottom: 8px;">• ${prevPlaylist.name} <span style="color: #b3b3b3;">(${prevPlaylist.trackCount} tracks)</span></p>`;
+            }
+            return '';
+        }).join('');
+        reviewSources.innerHTML = sourcesHtml;
+    }
+
+    // Settings summary
+    const roundDuration = document.getElementById('round-duration').value;
+    const gameMode = document.getElementById('game-mode').value;
+    const minPopularity = document.getElementById('min-popularity').value;
+
+    const gameModeText = gameMode === 'individual' ? 'Individual Rounds' : 'Swap Places (Team Round)';
+
+    reviewSettings.innerHTML = `
+        <p style="color: var(--text-color); margin-bottom: 8px;">• Time per player: <strong>${roundDuration}s</strong></p>
+        <p style="color: var(--text-color); margin-bottom: 8px;">• Game mode: <strong>${gameModeText}</strong></p>
+        <p style="color: var(--text-color); margin-bottom: 8px;">• Difficulty: <strong>${minPopularity === '0' ? 'All artists' : 'Min popularity ' + minPopularity}</strong></p>
+    `;
+}
+
+/**
  * Switch between tabs
  */
 function switchTab(tabName) {
@@ -832,6 +901,11 @@ function switchTab(tabName) {
             pane.classList.remove('active');
         }
     });
+
+    // Update review summary when switching to review tab
+    if (tabName === 'review') {
+        updateReviewSummary();
+    }
 }
 
 /**
