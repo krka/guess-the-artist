@@ -358,9 +358,6 @@ function startRound() {
     passButton.textContent = 'Skip';
     passButton.onclick = handlePass;
     document.getElementById('correct-button').onclick = handleCorrect;
-
-    // Update stats display
-    updateStatsDisplay();
 }
 
 /**
@@ -393,10 +390,6 @@ function showCurrentArtist() {
     }
 
     document.getElementById('artist-name').textContent = artist.name;
-
-    // Show popularity (for debugging/tuning filter)
-    const popularity = artist.popularity || 0;
-    document.getElementById('artist-popularity').textContent = `Popularity: ${popularity}`;
 
     // Track when this artist was shown (for accurate guess timing)
     gameState.currentArtistStartTime = Date.now();
@@ -451,7 +444,7 @@ function scheduleHints(tracks) {
 }
 
 /**
- * Show a hint with marquee animation
+ * Show a hint with fade in/out animation
  */
 function showHint(trackName) {
     const hintMarquee = document.getElementById('hint-marquee');
@@ -466,14 +459,14 @@ function showHint(trackName) {
     hintMarquee.classList.remove('hidden');
 
     // Restart animation by removing and re-adding class
-    hintText.classList.remove('marquee-scroll');
+    hintText.classList.remove('fade-in-out');
     void hintText.offsetWidth; // Force reflow
-    hintText.classList.add('marquee-scroll');
+    hintText.classList.add('fade-in-out');
 
-    // Hide after animation completes (5 seconds)
+    // Hide after animation completes (3 seconds: 0.5s fade in + 2s stay + 0.5s fade out)
     setTimeout(() => {
         hintMarquee.classList.add('hidden');
-    }, 5000);
+    }, 3000);
 }
 
 /**
@@ -538,20 +531,6 @@ function updateTimerDisplay() {
 }
 
 /**
- * Update stats display during round
- */
-function updateStatsDisplay() {
-    const team = gameConfig.teams[gameState.currentTeamIndex];
-    const player = team.members[gameState.currentPlayerIndex];
-    const playerId = `${team.id}-${player}`;
-    const stats = gameState.playerStats[playerId];
-
-    document.getElementById('current-correct').textContent = stats.correct;
-    document.getElementById('current-passed').textContent = stats.passed;
-    document.getElementById('current-streak').textContent = stats.currentStreak;
-}
-
-/**
  * Handle pass button
  */
 function handlePass() {
@@ -573,7 +552,6 @@ function handlePass() {
     // Move to next artist
     gameState.currentArtistIndex++;
     showCurrentArtist();
-    updateStatsDisplay();
 }
 
 /**
@@ -626,7 +604,6 @@ function handleCorrect() {
     // Move to next artist
     gameState.currentArtistIndex++;
     showCurrentArtist();
-    updateStatsDisplay();
 }
 
 /**
