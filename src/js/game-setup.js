@@ -437,6 +437,18 @@ async function loadPlaylists() {
     } catch (error) {
         console.error('Failed to load playlists:', error);
 
+        // If refresh token is invalid/revoked, automatically logout and redirect to login
+        if (error.message.includes('refresh token') ||
+            error.message.includes('Not authenticated') ||
+            error.message.includes('revoked')) {
+            showStatus('Session expired. Redirecting to login...', 'error');
+            setTimeout(() => {
+                spotifyClient.logout();
+                showLoginUI();
+            }, 2000);
+            return;
+        }
+
         // Show specific error message
         let errorMsg = 'Could not load your playlists. ';
         if (error.message.includes('401') || error.message.includes('Session expired')) {
