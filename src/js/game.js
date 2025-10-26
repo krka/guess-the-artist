@@ -391,10 +391,6 @@ function showCurrentArtist() {
 
     document.getElementById('artist-name').textContent = artist.name;
 
-    // Show popularity (for debugging/tuning filter)
-    const popularity = artist.popularity || 0;
-    document.getElementById('artist-popularity').textContent = `Popularity: ${popularity}`;
-
     // Track when this artist was shown (for accurate guess timing)
     gameState.currentArtistStartTime = Date.now();
 
