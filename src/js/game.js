@@ -153,9 +153,8 @@ async function fetchArtists() {
 
             const overallProgress = ((playlistIndex + stageOffset + (stageProgress * 0.5)) / progress.totalPlaylists) * 100;
 
-            const stageName = progress.stage === 'tracks' ? 'Tracks' : 'Artists';
             showStatus(
-                `Playlist ${progress.playlistNum}/${progress.totalPlaylists}: ${stageName}`,
+                '', // No text, just progress bar
                 'info',
                 Math.round(overallProgress)
             );
