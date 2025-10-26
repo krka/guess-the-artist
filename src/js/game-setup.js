@@ -171,6 +171,10 @@ async function initializeAuthenticatedUI() {
     // Load playlists immediately
     loadPlaylists();
 
+    // Update button state and summary to ensure everything is in sync
+    updateStartButtonState();
+    updateReviewSummary();
+
     // Fetch user profile in background
     try {
         console.log('Fetching user profile...');
@@ -204,6 +208,11 @@ function restoreSavedState() {
         if (savedPlaylists) {
             selectedPlaylistIds = JSON.parse(savedPlaylists);
             console.log('Restored selected playlists:', selectedPlaylistIds);
+            // Update the selected count immediately (before playlists load)
+            const selectedTabLabel = document.getElementById('selected-tab-label');
+            if (selectedTabLabel) {
+                selectedTabLabel.textContent = `Selected (${selectedPlaylistIds.length})`;
+            }
         }
 
         // Restore previously used playlists
@@ -758,7 +767,9 @@ async function startGame() {
 
     // Validate at least one playlist is selected
     if (selectedPlaylistIds.length === 0) {
-        showStatus('Please select at least one playlist', 'error');
+        showStatus('Please select at least one source from the Sources tab', 'error');
+        // Switch to sources tab to help user
+        switchTab('sources');
         return;
     }
 
@@ -896,9 +907,10 @@ function updateReviewSummary() {
             if (prevPlaylist) {
                 return `<p style="color: var(--text-color); margin-bottom: 8px;">• ${prevPlaylist.name} <span style="color: #b3b3b3;">(${prevPlaylist.trackCount} tracks)</span></p>`;
             }
-            return '';
+            // Playlist not loaded yet - show loading state
+            return `<p style="color: #b3b3b3; margin-bottom: 8px;">• Loading...</p>`;
         }).join('');
-        reviewSources.innerHTML = sourcesHtml;
+        reviewSources.innerHTML = sourcesHtml || '<p style="color: #b3b3b3;">Loading sources...</p>';
     }
 
     // Settings summary
