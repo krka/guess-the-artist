@@ -180,11 +180,15 @@ async function initializeAuthenticatedUI() {
         console.log('Fetching user profile...');
         const user = await spotifyClient.getCurrentUser();
         console.log('User profile received:', user);
-        userName.textContent = `Logged in as ${user.display_name || user.id}`;
+        if (userName) {
+            userName.textContent = `Logged in as ${user.display_name || user.id}`;
+        }
         showStatus('Ready to set up your game!', 'success');
     } catch (error) {
         console.error('Failed to fetch user profile:', error);
-        userName.textContent = 'Logged in';
+        if (userName) {
+            userName.textContent = 'Logged in';
+        }
         showStatus('Ready to set up your game!', 'success');
     }
 }
