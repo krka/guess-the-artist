@@ -918,9 +918,7 @@ select:focus {
     background-color: rgba(0, 0, 0, 0.7);
     padding: 15px 30px;
     border-radius: 50px;
-    width: 90%; /* Almost as wide as the image */
-    max-width: 700px;
-    min-width: 120px;
+    width: 100%; /* Fill the timer-overlay container */
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     position: relative;
@@ -982,6 +980,10 @@ select:focus {
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
+    width: 90%;
+    max-width: 700px;
+    display: flex;
+    justify-content: center;
 }
 
 .timer .progress-bar {
