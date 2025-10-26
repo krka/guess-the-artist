@@ -540,6 +540,7 @@ class SpotifyClient {
                 }
 
                 // Extract unique artists (primary artist only, skip features)
+                // Also collect track names for hints
                 data.items.forEach(item => {
                     if (item.track && item.track.artists && item.track.artists.length > 0) {
                         // Only take the first artist (primary), not featured artists
@@ -548,7 +549,12 @@ class SpotifyClient {
                             artistsMap.set(artist.id, {
                                 id: artist.id,
                                 name: artist.name,
+                                tracks: []
                             });
+                        }
+                        // Add track name to this artist's track list (for hints)
+                        if (item.track.name) {
+                            artistsMap.get(artist.id).tracks.push(item.track.name);
                         }
                     }
                 });
@@ -590,12 +596,15 @@ class SpotifyClient {
 
                 data.artists.forEach(artist => {
                     if (artist) {
+                        // Get track names from the artistsMap we built earlier
+                        const tracksData = artistsMap.get(artist.id);
                         artists.push({
                             id: artist.id,
                             name: artist.name,
                             image: artist.images[0]?.url || null,
                             popularity: artist.popularity,
                             genres: artist.genres,
+                            tracks: tracksData ? tracksData.tracks : []
                         });
                     }
                 });

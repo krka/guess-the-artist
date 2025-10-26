@@ -116,6 +116,14 @@ function setupEventListeners() {
         });
     }
 
+    const showHintsCheckbox = document.getElementById('show-hints');
+    if (showHintsCheckbox) {
+        showHintsCheckbox.addEventListener('change', () => {
+            saveState();
+            updateReviewSummary();
+        });
+    }
+
     // Search playlists
     const searchButton = document.getElementById('playlist-search-button');
     const searchInput = document.getElementById('playlist-search-input');
@@ -239,6 +247,9 @@ function restoreSavedState() {
             if (settings.gameMode !== undefined) {
                 document.getElementById('game-mode').value = settings.gameMode;
             }
+            if (settings.showHints !== undefined) {
+                document.getElementById('show-hints').checked = settings.showHints;
+            }
             console.log('Restored settings:', settings);
         }
     } catch (error) {
@@ -259,7 +270,8 @@ function saveState() {
             roundDuration: parseInt(document.getElementById('round-duration').value),
             timeRange: document.getElementById('time-range').value,
             minPopularity: parseInt(document.getElementById('min-popularity').value),
-            gameMode: document.getElementById('game-mode').value
+            gameMode: document.getElementById('game-mode').value,
+            showHints: document.getElementById('show-hints').checked
         };
         localStorage.setItem('savedSettings', JSON.stringify(settings));
     } catch (error) {
@@ -755,6 +767,7 @@ async function startGame() {
     const timeRange = document.getElementById('time-range').value;
     const minPopularity = parseInt(document.getElementById('min-popularity').value);
     const gameMode = document.getElementById('game-mode').value;
+    const showHints = document.getElementById('show-hints').checked;
 
     // Validate authentication BEFORE navigating
     try {
@@ -854,7 +867,8 @@ async function startGame() {
         gameMode: gameMode,  // 'individual' or 'swap-places'
         playlistIds: selectedPlaylistIds,  // Selected playlist IDs
         minPopularity: minPopularity,  // Filter out obscure artists
-        minArtistsNeeded: totalGameSeconds  // Minimum to avoid running out
+        minArtistsNeeded: totalGameSeconds,  // Minimum to avoid running out
+        showHints: showHints  // Show track name hints
     };
 
     // Save to localStorage for the game page
@@ -932,12 +946,15 @@ function updateReviewSummary() {
     // Settings summary
     const roundDuration = document.getElementById('round-duration').value;
     const minPopularity = document.getElementById('min-popularity').value;
+    const showHints = document.getElementById('show-hints').checked;
 
     const gameModeText = gameMode === 'individual' ? 'Individual Rounds' : 'Swap Places (Team Round)';
+    const hintsText = showHints ? 'Enabled' : 'Disabled';
 
     reviewSettings.innerHTML = `
         <p style="color: var(--text-color); margin-bottom: 8px;">• Time per player: <strong>${roundDuration}s</strong></p>
         <p style="color: var(--text-color); margin-bottom: 8px;">• Game mode: <strong>${gameModeText}</strong></p>
+        <p style="color: var(--text-color); margin-bottom: 8px;">• Track hints: <strong>${hintsText}</strong></p>
         <p style="color: var(--text-color); margin-bottom: 8px;">• Difficulty: <strong>${minPopularity === '0' ? 'All artists' : 'Min popularity ' + minPopularity}</strong></p>
     `;
 }
