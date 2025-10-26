@@ -17,7 +17,8 @@ let gameState = {
     timerInterval: null,
     remainingTime: 0,
     initialRoundDuration: 0,  // Track the actual duration for this round (for progress bar)
-    phase: 'ready'
+    phase: 'ready',
+    overtime: false  // True when time has run out but waiting for final guess
 };
 
 // Preloaded images cache
@@ -336,6 +337,7 @@ function startRound() {
     }
 
     gameState.roundStartTime = Date.now();
+    gameState.overtime = false;  // Reset overtime state
 
     // Reset current player's stats
     const player = team.members[gameState.currentPlayerIndex];
@@ -349,7 +351,7 @@ function startRound() {
     // Start timer
     startTimer();
 
-    // Setup buttons (reset from any time-up state)
+    // Setup buttons (callbacks stay the same, they check gameState.overtime)
     const passButton = document.getElementById('pass-button');
     passButton.textContent = 'Skip';
     passButton.onclick = handlePass;
@@ -416,16 +418,12 @@ function startTimer() {
             clearInterval(gameState.timerInterval);
             gameState.timerInterval = null;
 
-            // Change Skip button to Pass and make both buttons end the round
+            // Enter overtime mode - buttons will check this state
+            gameState.overtime = true;
+
+            // Change Skip button to Pass
             const passButton = document.getElementById('pass-button');
             passButton.textContent = 'Pass';
-
-            // Both buttons now end the round (time's up - final guess)
-            passButton.onclick = endRound;
-            document.getElementById('correct-button').onclick = () => {
-                handleCorrect();
-                endRound();
-            };
         }
     }, 1000);
 }
@@ -484,6 +482,12 @@ function updateStatsDisplay() {
  * Handle pass button
  */
 function handlePass() {
+    // If in overtime, pass ends the round
+    if (gameState.overtime) {
+        endRound();
+        return;
+    }
+
     const team = gameConfig.teams[gameState.currentTeamIndex];
     const player = team.members[gameState.currentPlayerIndex];
     const playerId = `${team.id}-${player}`;
@@ -539,6 +543,12 @@ function handleCorrect() {
         time: guessTime,
         wasCorrect: true
     });
+
+    // If in overtime, correct ends the round
+    if (gameState.overtime) {
+        endRound();
+        return;
+    }
 
     // Move to next artist
     gameState.currentArtistIndex++;
