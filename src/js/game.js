@@ -144,8 +144,13 @@ async function fetchArtists() {
 
         // Fetch artists from playlists
         console.log('Fetching artists from playlists...', gameConfig.playlistIds);
-        const progressCallback = (detail) => {
-            showStatus(`Loading artists from playlists... (${detail})`, 'info');
+        const progressCallback = (progress) => {
+            const stageName = progress.stage === 'tracks' ? 'Tracks' : 'Artists';
+            showStatus(
+                `Playlist ${progress.playlistNum}/${progress.totalPlaylists}: ${stageName} ${progress.percent}%`,
+                'info',
+                progress.percent
+            );
         };
         const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
         console.log(`Got ${artists.length} artists from playlists`);
@@ -802,10 +807,37 @@ function showErrorPhase(message, debugInfo) {
 }
 
 /**
- * Show status message
+ * Show status message with optional progress bar
  */
-function showStatus(message, type = 'info') {
-    statusMessage.textContent = message;
+function showStatus(message, type = 'info', progress = null) {
+    // Check if progress bar already exists
+    let progressBar = statusMessage.querySelector('.status-progress-bar');
+
+    if (progress !== null) {
+        // Show message with progress bar
+        const textSpan = statusMessage.querySelector('.status-text') || document.createElement('div');
+        textSpan.className = 'status-text';
+        textSpan.textContent = message;
+
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'status-progress-bar';
+            const fill = document.createElement('div');
+            fill.className = 'status-progress-fill';
+            progressBar.appendChild(fill);
+        }
+
+        const fill = progressBar.querySelector('.status-progress-fill');
+        fill.style.width = `${progress}%`;
+
+        statusMessage.innerHTML = '';
+        statusMessage.appendChild(textSpan);
+        statusMessage.appendChild(progressBar);
+    } else {
+        // Simple text message
+        statusMessage.textContent = message;
+    }
+
     statusMessage.className = type;
     statusMessage.classList.remove('hidden');
 
