@@ -110,7 +110,18 @@ function setupEventListeners() {
 
     const gameModeSelect = document.getElementById('game-mode');
     if (gameModeSelect) {
-        gameModeSelect.addEventListener('change', saveState);
+        gameModeSelect.addEventListener('change', () => {
+            saveState();
+            updateReviewSummary();
+        });
+    }
+
+    const showHintsCheckbox = document.getElementById('show-hints');
+    if (showHintsCheckbox) {
+        showHintsCheckbox.addEventListener('change', () => {
+            saveState();
+            updateReviewSummary();
+        });
     }
 
     // Search playlists
@@ -168,16 +179,24 @@ async function initializeAuthenticatedUI() {
     // Load playlists immediately
     loadPlaylists();
 
+    // Update button state and summary to ensure everything is in sync
+    updateStartButtonState();
+    updateReviewSummary();
+
     // Fetch user profile in background
     try {
         console.log('Fetching user profile...');
         const user = await spotifyClient.getCurrentUser();
         console.log('User profile received:', user);
-        userName.textContent = `Logged in as ${user.display_name || user.id}`;
+        if (userName) {
+            userName.textContent = `Logged in as ${user.display_name || user.id}`;
+        }
         showStatus('Ready to set up your game!', 'success');
     } catch (error) {
         console.error('Failed to fetch user profile:', error);
-        userName.textContent = 'Logged in';
+        if (userName) {
+            userName.textContent = 'Logged in';
+        }
         showStatus('Ready to set up your game!', 'success');
     }
 }
@@ -201,6 +220,11 @@ function restoreSavedState() {
         if (savedPlaylists) {
             selectedPlaylistIds = JSON.parse(savedPlaylists);
             console.log('Restored selected playlists:', selectedPlaylistIds);
+            // Update the selected count immediately (before playlists load)
+            const selectedTabLabel = document.getElementById('selected-tab-label');
+            if (selectedTabLabel) {
+                selectedTabLabel.textContent = `Selected (${selectedPlaylistIds.length})`;
+            }
         }
 
         // Restore previously used playlists
@@ -223,6 +247,9 @@ function restoreSavedState() {
             if (settings.gameMode !== undefined) {
                 document.getElementById('game-mode').value = settings.gameMode;
             }
+            if (settings.showHints !== undefined) {
+                document.getElementById('show-hints').checked = settings.showHints;
+            }
             console.log('Restored settings:', settings);
         }
     } catch (error) {
@@ -243,7 +270,8 @@ function saveState() {
             roundDuration: parseInt(document.getElementById('round-duration').value),
             timeRange: document.getElementById('time-range').value,
             minPopularity: parseInt(document.getElementById('min-popularity').value),
-            gameMode: document.getElementById('game-mode').value
+            gameMode: document.getElementById('game-mode').value,
+            showHints: document.getElementById('show-hints').checked
         };
         localStorage.setItem('savedSettings', JSON.stringify(settings));
     } catch (error) {
@@ -375,23 +403,18 @@ function toggleTeam(teamId, enabled) {
  * Update start button state
  */
 function updateStartButtonState() {
-    // Enable start button if at least one enabled, non-empty team has at least 2 members
+    // Start button is always enabled now - we'll handle validation in startGame()
+    startGameButton.disabled = false;
+
+    // Update button text to show team count if there are valid teams
     const validTeams = teams.filter(team =>
         team.enabled !== false &&
         team.members.length >= 2
     );
 
-    startGameButton.disabled = validTeams.length === 0;
-
-    // Update button text to show team count
     if (validTeams.length === 0) {
         startGameButton.textContent = 'Start Game';
-        const enabledTeams = teams.filter(team => team.enabled !== false);
-        if (enabledTeams.length === 0) {
-            startGameButton.title = 'Enable at least one team to start';
-        } else {
-            startGameButton.title = 'Each enabled team needs at least 2 players';
-        }
+        startGameButton.title = '';
     } else {
         const teamText = validTeams.length === 1 ? 'team' : 'teams';
         startGameButton.textContent = `Start Game (${validTeams.length} ${teamText})`;
@@ -425,6 +448,18 @@ async function loadPlaylists() {
         playlistsList.classList.remove('hidden');
     } catch (error) {
         console.error('Failed to load playlists:', error);
+
+        // If refresh token is invalid/revoked, automatically logout and redirect to login
+        if (error.message.includes('refresh token') ||
+            error.message.includes('Not authenticated') ||
+            error.message.includes('revoked')) {
+            showStatus('Session expired. Redirecting to login...', 'error');
+            setTimeout(() => {
+                spotifyClient.logout();
+                showLoginUI();
+            }, 2000);
+            return;
+        }
 
         // Show specific error message
         let errorMsg = 'Could not load your playlists. ';
@@ -732,6 +767,7 @@ async function startGame() {
     const timeRange = document.getElementById('time-range').value;
     const minPopularity = parseInt(document.getElementById('min-popularity').value);
     const gameMode = document.getElementById('game-mode').value;
+    const showHints = document.getElementById('show-hints').checked;
 
     // Validate authentication BEFORE navigating
     try {
@@ -760,30 +796,63 @@ async function startGame() {
 
     // Validate at least one playlist is selected
     if (selectedPlaylistIds.length === 0) {
-        showStatus('Please select at least one playlist', 'error');
+        showStatus('Please select at least one source from the Sources tab', 'error');
+        // Switch to sources tab to help user
+        switchTab('sources');
         return;
     }
 
     // Filter to only enabled, non-empty teams with at least 2 players
-    const validTeams = teams.filter(team =>
+    let validTeams = teams.filter(team =>
         team.enabled !== false &&
         team.members.length >= 2
     );
 
-    // Warn if any teams were filtered out
-    const filteredOutTeams = teams.filter(team =>
-        team.enabled === false || team.members.length < 2
-    );
-    if (filteredOutTeams.length > 0) {
-        const reasons = filteredOutTeams.map(team => {
-            const teamLabel = team.members.length > 0 ? team.members.join(' & ') : 'Empty team';
-            if (team.enabled === false) {
-                return `${teamLabel}: disabled`;
-            } else if (team.members.length < 2) {
-                return `${teamLabel}: only ${team.members.length} player(s)`;
-            }
-        }).join(', ');
-        console.warn('Teams excluded from game:', reasons);
+    // If no valid teams, create default teams based on game mode
+    if (validTeams.length === 0) {
+        if (gameMode === 'swap-places') {
+            // For swap-places mode, create a single team with no player names
+            // The game will handle role swapping without needing names
+            validTeams = [{
+                id: 'default-team',
+                name: 'Team',
+                members: ['Player 1', 'Player 2'],
+                enabled: true
+            }];
+        } else {
+            // For individual mode, create 2 default players
+            validTeams = [
+                {
+                    id: 'default-player-1',
+                    name: 'Player 1',
+                    members: ['Player 1'],
+                    enabled: true
+                },
+                {
+                    id: 'default-player-2',
+                    name: 'Player 2',
+                    members: ['Player 2'],
+                    enabled: true
+                }
+            ];
+        }
+        console.log('No teams configured, using default setup');
+    } else {
+        // Warn if any teams were filtered out
+        const filteredOutTeams = teams.filter(team =>
+            team.enabled === false || team.members.length < 2
+        );
+        if (filteredOutTeams.length > 0) {
+            const reasons = filteredOutTeams.map(team => {
+                const teamLabel = team.members.length > 0 ? team.members.join(' & ') : 'Empty team';
+                if (team.enabled === false) {
+                    return `${teamLabel}: disabled`;
+                } else if (team.members.length < 2) {
+                    return `${teamLabel}: only ${team.members.length} player(s)`;
+                }
+            }).join(', ');
+            console.warn('Teams excluded from game:', reasons);
+        }
     }
 
     console.log('Valid teams for game:', validTeams.map(t => `${t.members.join(' & ')} (${t.members.length} players)`).join(', '));
@@ -798,7 +867,8 @@ async function startGame() {
         gameMode: gameMode,  // 'individual' or 'swap-places'
         playlistIds: selectedPlaylistIds,  // Selected playlist IDs
         minPopularity: minPopularity,  // Filter out obscure artists
-        minArtistsNeeded: totalGameSeconds  // Minimum to avoid running out
+        minArtistsNeeded: totalGameSeconds,  // Minimum to avoid running out
+        showHints: showHints  // Show track name hints
     };
 
     // Save to localStorage for the game page
@@ -838,8 +908,14 @@ function updateReviewSummary() {
 
     // Teams summary
     const validTeams = teams.filter(team => team.enabled !== false && team.members.length >= 2);
+    const gameMode = document.getElementById('game-mode').value;
+
     if (validTeams.length === 0) {
-        reviewTeams.innerHTML = '<p style="color: #b3b3b3;">No teams configured</p>';
+        if (gameMode === 'swap-places') {
+            reviewTeams.innerHTML = '<p style="color: #b3b3b3;">Default: 2 players (swap places mode)</p>';
+        } else {
+            reviewTeams.innerHTML = '<p style="color: #b3b3b3;">Default: Player 1, Player 2</p>';
+        }
     } else {
         const teamsHtml = validTeams.map(team => {
             const membersList = team.members.join(', ');
@@ -861,21 +937,24 @@ function updateReviewSummary() {
             if (prevPlaylist) {
                 return `<p style="color: var(--text-color); margin-bottom: 8px;">• ${prevPlaylist.name} <span style="color: #b3b3b3;">(${prevPlaylist.trackCount} tracks)</span></p>`;
             }
-            return '';
+            // Playlist not loaded yet - show loading state
+            return `<p style="color: #b3b3b3; margin-bottom: 8px;">• Loading...</p>`;
         }).join('');
-        reviewSources.innerHTML = sourcesHtml;
+        reviewSources.innerHTML = sourcesHtml || '<p style="color: #b3b3b3;">Loading sources...</p>';
     }
 
     // Settings summary
     const roundDuration = document.getElementById('round-duration').value;
-    const gameMode = document.getElementById('game-mode').value;
     const minPopularity = document.getElementById('min-popularity').value;
+    const showHints = document.getElementById('show-hints').checked;
 
     const gameModeText = gameMode === 'individual' ? 'Individual Rounds' : 'Swap Places (Team Round)';
+    const hintsText = showHints ? 'Enabled' : 'Disabled';
 
     reviewSettings.innerHTML = `
         <p style="color: var(--text-color); margin-bottom: 8px;">• Time per player: <strong>${roundDuration}s</strong></p>
         <p style="color: var(--text-color); margin-bottom: 8px;">• Game mode: <strong>${gameModeText}</strong></p>
+        <p style="color: var(--text-color); margin-bottom: 8px;">• Track hints: <strong>${hintsText}</strong></p>
         <p style="color: var(--text-color); margin-bottom: 8px;">• Difficulty: <strong>${minPopularity === '0' ? 'All artists' : 'Min popularity ' + minPopularity}</strong></p>
     `;
 }
@@ -902,8 +981,8 @@ function switchTab(tabName) {
         }
     });
 
-    // Update review summary when switching to review tab
-    if (tabName === 'review') {
+    // Update review summary when switching to play tab
+    if (tabName === 'play') {
         updateReviewSummary();
     }
 }

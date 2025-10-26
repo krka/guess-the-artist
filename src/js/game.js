@@ -358,9 +358,6 @@ function startRound() {
     passButton.textContent = 'Skip';
     passButton.onclick = handlePass;
     document.getElementById('correct-button').onclick = handleCorrect;
-
-    // Update stats display
-    updateStatsDisplay();
 }
 
 /**
@@ -538,20 +535,6 @@ function updateTimerDisplay() {
 }
 
 /**
- * Update stats display during round
- */
-function updateStatsDisplay() {
-    const team = gameConfig.teams[gameState.currentTeamIndex];
-    const player = team.members[gameState.currentPlayerIndex];
-    const playerId = `${team.id}-${player}`;
-    const stats = gameState.playerStats[playerId];
-
-    document.getElementById('current-correct').textContent = stats.correct;
-    document.getElementById('current-passed').textContent = stats.passed;
-    document.getElementById('current-streak').textContent = stats.currentStreak;
-}
-
-/**
  * Handle pass button
  */
 function handlePass() {
@@ -573,7 +556,6 @@ function handlePass() {
     // Move to next artist
     gameState.currentArtistIndex++;
     showCurrentArtist();
-    updateStatsDisplay();
 }
 
 /**
@@ -626,7 +608,6 @@ function handleCorrect() {
     // Move to next artist
     gameState.currentArtistIndex++;
     showCurrentArtist();
-    updateStatsDisplay();
 }
 
 /**
