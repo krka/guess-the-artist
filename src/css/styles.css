@@ -895,6 +895,11 @@ select:focus {
     width: 100%;
 }
 
+#phase-playing .game-card {
+    padding-top: 20px;
+    padding-bottom: 10px;
+}
+
 /* Content inside game-card needs to be above rain */
 .game-card > * {
     position: relative;
@@ -913,6 +918,8 @@ select:focus {
     background-color: rgba(0, 0, 0, 0.7);
     padding: 15px 30px;
     border-radius: 50px;
+    width: 90%; /* Almost as wide as the image */
+    max-width: 700px;
     min-width: 120px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -943,11 +950,11 @@ select:focus {
     align-items: center;
     min-height: calc(100vh - 90px); /* Full viewport minus fixed buttons */
     justify-content: center;
-    padding: 20px 0;
+    padding: 0;
 }
 
 .artist-image-container {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     display: flex;
     justify-content: center;
     position: relative;
@@ -999,8 +1006,8 @@ select:focus {
     font-size: 2.5rem;
     font-weight: bold;
     color: var(--primary-color);
-    margin-top: 20px;
-    margin-bottom: 10px;
+    margin-top: 10px;
+    margin-bottom: 5px;
     line-height: 1.2;
     max-height: 120px;
     overflow: hidden;
@@ -1415,7 +1422,7 @@ select:focus {
     }
 
     #phase-playing .game-card {
-        padding-top: 10px;
+        padding-top: 5px;
         padding-bottom: 0;
     }
 
