@@ -915,7 +915,6 @@ function updateReviewSummary() {
 
     // Settings summary
     const roundDuration = document.getElementById('round-duration').value;
-    const gameMode = document.getElementById('game-mode').value;
     const minPopularity = document.getElementById('min-popularity').value;
 
     const gameModeText = gameMode === 'individual' ? 'Individual Rounds' : 'Swap Places (Team Round)';
