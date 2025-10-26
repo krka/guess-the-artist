@@ -937,8 +937,13 @@ select:focus {
 
 /* Artist Display */
 .artist-display {
-    margin-bottom: 30px;
-    padding-bottom: 100px; /* Add space for fixed buttons at bottom */
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: calc(100vh - 90px); /* Full viewport minus fixed buttons */
+    justify-content: center;
+    padding: 20px 0;
 }
 
 .artist-image-container {
@@ -952,7 +957,13 @@ select:focus {
 .artist-image-large {
     width: 100%;
     max-width: 800px;
-    aspect-ratio: 1;
+    /* Calculate max-height to fit everything on screen:
+       100vh - fixed buttons (18px padding × 2 + 1.2rem font × 1.5 line-height + 15px container padding × 2 ≈ 85px)
+             - artist name (2.5rem × 1.2 line-height + 20px margin-top + 10px margin-bottom ≈ 80px)
+             - popularity text (0.9rem + margins ≈ 25px)
+             - card padding and spacing (≈ 50px)
+       Total: ~240px */
+    max-height: min(800px, calc(100vh - 240px));
     object-fit: cover;
     border-radius: var(--border-radius);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
@@ -989,7 +1000,11 @@ select:focus {
     font-weight: bold;
     color: var(--primary-color);
     margin-top: 20px;
+    margin-bottom: 10px;
     line-height: 1.2;
+    max-height: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .artist-popularity {
@@ -1388,6 +1403,20 @@ select:focus {
     .artist-image-large {
         width: 100%;
         max-width: 100%;
+        /* On mobile, tighter spacing - recalculate:
+           100vh - buttons (85px) - artist name (2rem × 1.2 + margins ≈ 65px)
+                 - popularity (25px) - card padding reduced (15px × 2 = 30px) - extra spacing (15px)
+           Total: ~220px */
+        max-height: calc(100vh - 220px);
+    }
+
+    .game-card {
+        padding: 15px;
+    }
+
+    #phase-playing .game-card {
+        padding-top: 10px;
+        padding-bottom: 0;
     }
 
     .artist-name-large {
