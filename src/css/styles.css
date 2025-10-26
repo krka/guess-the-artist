@@ -912,12 +912,12 @@ select:focus {
 }
 
 .timer {
-    font-size: 4rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: white;
     background-color: rgba(0, 0, 0, 0.7);
-    padding: 15px 30px;
-    border-radius: 50px;
+    padding: 8px 15px;
+    border-radius: 25px;
     width: 100%; /* Fill the timer-overlay container */
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -1413,8 +1413,8 @@ select:focus {
 
     /* Game view optimizations */
     .timer {
-        font-size: 2.5rem;
-        padding: 10px 20px;
+        font-size: 1rem;
+        padding: 6px 12px;
     }
 
     .timer-overlay {
