@@ -420,11 +420,23 @@ function startTimer() {
  */
 function updateTimerDisplay() {
     const timerElement = document.getElementById('timer');
-    timerElement.textContent = gameState.remainingTime;
+
+    // Update just the text node, not the entire content (preserves progress bar HTML)
+    const textNode = Array.from(timerElement.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+    if (textNode) {
+        textNode.textContent = gameState.remainingTime;
+    } else {
+        // First time: create text node before progress bar
+        const newTextNode = document.createTextNode(gameState.remainingTime);
+        timerElement.insertBefore(newTextNode, timerElement.firstChild);
+    }
 
     // Update progress bar (use actual initial duration, not just playerDuration)
     const progress = (gameState.remainingTime / gameState.initialRoundDuration) * 100;
-    document.getElementById('progress-fill').style.width = `${progress}%`;
+    const progressFill = document.getElementById('progress-fill');
+    if (progressFill) {
+        progressFill.style.width = `${progress}%`;
+    }
 
     // Color changes based on time
     if (gameState.remainingTime <= 10) {
@@ -432,7 +444,7 @@ function updateTimerDisplay() {
     } else if (gameState.remainingTime <= 20) {
         timerElement.style.color = '#f39c12';
     } else {
-        timerElement.style.color = '#1db954';
+        timerElement.style.color = 'white';
     }
 }
 
