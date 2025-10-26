@@ -11,10 +11,6 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Guess the Artist</h1>
-        </header>
-
         <!-- Game View -->
         <section class="game-view" id="game-view">
             <!-- Error Phase -->
@@ -52,16 +48,15 @@
             <!-- Playing Phase -->
             <div class="game-phase hidden" id="phase-playing">
                 <div class="game-card">
-                    <div class="timer-section">
-                        <div class="timer" id="timer">30</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-fill"></div>
-                        </div>
-                    </div>
-
                     <div class="artist-display">
                         <div class="artist-image-container">
                             <img id="artist-image" class="artist-image-large" src="" alt="Artist">
+                            <div class="timer-overlay">
+                                <div class="timer" id="timer">30</div>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
                         </div>
                         <div class="artist-name-large" id="artist-name">Artist Name</div>
                         <div class="artist-popularity" id="artist-popularity">Popularity: --</div>

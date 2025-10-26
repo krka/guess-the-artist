@@ -909,8 +909,13 @@ select:focus {
 .timer {
     font-size: 4rem;
     font-weight: bold;
-    color: var(--primary-color);
-    margin-bottom: 15px;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 15px 30px;
+    border-radius: 50px;
+    min-width: 120px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .progress-bar {
@@ -936,15 +941,25 @@ select:focus {
     margin-bottom: 20px;
     display: flex;
     justify-content: center;
+    position: relative;
+    width: 100%;
 }
 
 .artist-image-large {
     width: 100%;
-    max-width: 500px;
+    max-width: 800px;
     aspect-ratio: 1;
     object-fit: cover;
     border-radius: var(--border-radius);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.timer-overlay {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
 }
 
 .artist-name-large {
@@ -1326,6 +1341,11 @@ select:focus {
     /* Game view optimizations */
     .timer {
         font-size: 2.5rem;
+        padding: 10px 20px;
+    }
+
+    .timer-overlay {
+        top: 15px;
     }
 
     .artist-image-large {
