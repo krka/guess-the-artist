@@ -30,7 +30,6 @@
         <section class="game-setup hidden" id="game-setup-section">
             <div class="user-info" id="user-info">
                 <span id="user-name">Loading...</span>
-                <button id="logout-button" class="btn-secondary">Logout</button>
             </div>
 
             <div class="setup-card">
@@ -46,6 +45,9 @@
                     </button>
                     <button class="tab-button" data-tab="settings" onclick="switchTab('settings')">
                         Settings
+                    </button>
+                    <button class="tab-button" data-tab="review" onclick="switchTab('review')">
+                        Review
                     </button>
                 </div>
 
@@ -65,34 +67,34 @@
 
                         <!-- Tab 2: Artist Sources -->
                         <div class="tab-pane" id="tab-sources">
-                            <!-- Selected Sources (always visible) -->
-                            <div id="selected-playlists-section" class="hidden" style="margin-bottom: 20px;">
-                                <label class="selected-label">Selected Sources:</label>
-                                <div id="selected-playlists-list" class="selected-playlists-list">
-                                    <!-- Selected sources will be dynamically added here -->
-                                </div>
-                            </div>
-
                             <div class="input-group">
-                                <label>Browse Sources:</label>
-
                                 <!-- Inner Tab Navigation -->
                                 <div class="inner-tab-nav">
-                                    <button class="inner-tab-button active" data-inner-tab="playlists" onclick="switchInnerTab('playlists')">
+                                    <button class="inner-tab-button active" data-inner-tab="selected" onclick="switchInnerTab('selected')">
+                                        <span id="selected-tab-label">Selected (0)</span>
+                                    </button>
+                                    <button class="inner-tab-button" data-inner-tab="playlists" onclick="switchInnerTab('playlists')">
                                         Your Playlists
                                     </button>
                                     <button class="inner-tab-button" data-inner-tab="search" onclick="switchInnerTab('search')">
-                                        Search Playlists
+                                        Search
                                     </button>
                                     <button class="inner-tab-button" data-inner-tab="previous" onclick="switchInnerTab('previous')">
-                                        Previously Used
+                                        Recent
                                     </button>
                                 </div>
 
                                 <!-- Inner Tab Content -->
                                 <div class="inner-tab-content">
+                                    <!-- Selected Sources -->
+                                    <div class="inner-tab-pane active" id="inner-tab-selected">
+                                        <div id="selected-playlists-list" class="playlists-list">
+                                            <div class="empty-state">No sources selected yet</div>
+                                        </div>
+                                    </div>
+
                                     <!-- Your Playlists -->
-                                    <div class="inner-tab-pane active" id="inner-tab-playlists">
+                                    <div class="inner-tab-pane" id="inner-tab-playlists">
                                         <!-- Filter -->
                                         <input
                                             type="text"
@@ -182,13 +184,44 @@
                                     Only used if "My Top Artists" is selected
                                 </p>
                             </div>
+
+                            <div class="input-group" style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #404040;">
+                                <button id="logout-button" class="btn-secondary" style="width: 100%;">Logout</button>
+                            </div>
+                        </div>
+
+                        <!-- Tab 4: Review & Start -->
+                        <div class="tab-pane" id="tab-review">
+                            <div class="review-summary">
+                                <h3 style="color: var(--primary-color); margin-bottom: 20px;">Ready to Play?</h3>
+
+                                <div class="summary-section">
+                                    <h4 style="color: #b3b3b3; font-size: 1rem; margin-bottom: 10px;">Teams</h4>
+                                    <div id="review-teams" class="summary-content">
+                                        <p style="color: #b3b3b3;">No teams configured</p>
+                                    </div>
+                                </div>
+
+                                <div class="summary-section" style="margin-top: 20px;">
+                                    <h4 style="color: #b3b3b3; font-size: 1rem; margin-bottom: 10px;">Sources</h4>
+                                    <div id="review-sources" class="summary-content">
+                                        <p style="color: #b3b3b3;">No sources selected</p>
+                                    </div>
+                                </div>
+
+                                <div class="summary-section" style="margin-top: 20px;">
+                                    <h4 style="color: #b3b3b3; font-size: 1rem; margin-bottom: 10px;">Game Settings</h4>
+                                    <div id="review-settings" class="summary-content">
+                                        <!-- Settings summary will be populated here -->
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 30px;">
+                                    <button id="start-game-button" class="btn-primary btn-large" disabled>Start Game</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Sticky Start Button -->
-                <div class="sticky-button-container">
-                    <button id="start-game-button" class="btn-primary btn-large" disabled>Start Game</button>
                 </div>
             </div>
         </section>
