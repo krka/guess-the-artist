@@ -349,8 +349,10 @@ function startRound() {
     // Start timer
     startTimer();
 
-    // Setup buttons
-    document.getElementById('pass-button').onclick = handlePass;
+    // Setup buttons (reset from any time-up state)
+    const passButton = document.getElementById('pass-button');
+    passButton.textContent = 'Skip';
+    passButton.onclick = handlePass;
     document.getElementById('correct-button').onclick = handleCorrect;
 
     // Update stats display
@@ -410,7 +412,20 @@ function startTimer() {
         updateTimerDisplay();
 
         if (gameState.remainingTime <= 0) {
-            endRound();
+            // Stop the timer but keep showing the current artist
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = null;
+
+            // Change Skip button to Pass and make both buttons end the round
+            const passButton = document.getElementById('pass-button');
+            passButton.textContent = 'Pass';
+
+            // Both buttons now end the round (time's up - final guess)
+            passButton.onclick = endRound;
+            document.getElementById('correct-button').onclick = () => {
+                handleCorrect();
+                endRound();
+            };
         }
     }, 1000);
 }
@@ -420,26 +435,29 @@ function startTimer() {
  */
 function updateTimerDisplay() {
     const timerElement = document.getElementById('timer');
+    const displayTime = Math.max(0, gameState.remainingTime); // Don't show negative numbers
 
     // Update just the text node, not the entire content (preserves progress bar HTML)
     const textNode = Array.from(timerElement.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
     if (textNode) {
-        textNode.textContent = gameState.remainingTime;
+        textNode.textContent = displayTime;
     } else {
         // First time: create text node before progress bar
-        const newTextNode = document.createTextNode(gameState.remainingTime);
+        const newTextNode = document.createTextNode(displayTime);
         timerElement.insertBefore(newTextNode, timerElement.firstChild);
     }
 
     // Update progress bar (use actual initial duration, not just playerDuration)
-    const progress = (gameState.remainingTime / gameState.initialRoundDuration) * 100;
+    const progress = Math.max(0, (gameState.remainingTime / gameState.initialRoundDuration) * 100);
     const progressFill = document.getElementById('progress-fill');
     if (progressFill) {
         progressFill.style.width = `${progress}%`;
     }
 
     // Color changes based on time
-    if (gameState.remainingTime <= 10) {
+    if (gameState.remainingTime <= 0) {
+        timerElement.style.color = '#e74c3c';
+    } else if (gameState.remainingTime <= 10) {
         timerElement.style.color = '#e74c3c';
     } else if (gameState.remainingTime <= 20) {
         timerElement.style.color = '#f39c12';
