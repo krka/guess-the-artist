@@ -914,21 +914,25 @@ select:focus {
 
 .artist-image-container {
     margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
 }
 
 .artist-image-large {
-    width: 300px;
-    height: 300px;
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1;
     object-fit: cover;
     border-radius: var(--border-radius);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .artist-name-large {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: bold;
     color: var(--primary-color);
     margin-top: 20px;
+    line-height: 1.2;
 }
 
 .artist-popularity {
@@ -1305,17 +1309,17 @@ select:focus {
     }
 
     .artist-image-large {
-        width: 200px;
-        height: 200px;
+        width: 100%;
+        max-width: 100%;
     }
 
     .artist-name-large {
-        font-size: 1.3rem;
+        font-size: 2rem;
     }
 
     .artist-popularity {
-        font-size: 0.8rem;
-        margin-top: 5px;
+        font-size: 0.85rem;
+        margin-top: 8px;
     }
 
     .player-name {
