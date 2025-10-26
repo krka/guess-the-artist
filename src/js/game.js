@@ -145,11 +145,19 @@ async function fetchArtists() {
         // Fetch artists from playlists
         console.log('Fetching artists from playlists...', gameConfig.playlistIds);
         const progressCallback = (progress) => {
+            // Calculate overall progress across all playlists
+            // Formula: (current_playlist_index + stage_progress) / total_playlists
+            const playlistIndex = progress.playlistNum - 1; // Convert to 0-based
+            const stageProgress = progress.percent / 100; // Convert to 0.0-1.0
+            const stageOffset = progress.stage === 'tracks' ? 0 : 0.5; // tracks = first half, artists = second half
+
+            const overallProgress = ((playlistIndex + stageOffset + (stageProgress * 0.5)) / progress.totalPlaylists) * 100;
+
             const stageName = progress.stage === 'tracks' ? 'Tracks' : 'Artists';
             showStatus(
-                `Playlist ${progress.playlistNum}/${progress.totalPlaylists}: ${stageName} ${progress.percent}%`,
+                `Playlist ${progress.playlistNum}/${progress.totalPlaylists}: ${stageName}`,
                 'info',
-                progress.percent
+                Math.round(overallProgress)
             );
         };
         const artists = await spotifyClient.getArtistsFromPlaylists(gameConfig.playlistIds, progressCallback);
