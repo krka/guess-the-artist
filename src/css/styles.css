@@ -938,6 +938,7 @@ select:focus {
 /* Artist Display */
 .artist-display {
     margin-bottom: 30px;
+    padding-bottom: 100px; /* Add space for fixed buttons at bottom */
 }
 
 .artist-image-container {
@@ -1007,6 +1008,21 @@ select:focus {
 
 .game-controls .btn-large {
     flex: 1;
+}
+
+.game-controls-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-color);
+    padding: 15px;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    margin-bottom: 0;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Game Stats */
