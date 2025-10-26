@@ -916,6 +916,9 @@ select:focus {
     min-width: 120px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
 }
 
 .progress-bar {
@@ -960,17 +963,24 @@ select:focus {
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
 }
 
-.timer-overlay .progress-bar {
-    width: 200px;
-    height: 6px;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
+.timer .progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    border-radius: 50px;
+    z-index: -1;
+}
+
+.timer .progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 50px;
+    opacity: 0.4;
 }
 
 .artist-name-large {
@@ -1357,12 +1367,6 @@ select:focus {
 
     .timer-overlay {
         top: 15px;
-        gap: 8px;
-    }
-
-    .timer-overlay .progress-bar {
-        width: 150px;
-        height: 5px;
     }
 
     .artist-image-large {
