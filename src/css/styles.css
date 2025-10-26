@@ -1037,14 +1037,26 @@ select:focus {
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: var(--bg-color);
+    background-color: var(--card-bg);
     padding: 15px;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
     z-index: 100;
     margin-bottom: 0;
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
+    border-radius: 20px 20px 0 0;
+}
+
+.game-controls-fixed .btn-secondary {
+    background-color: #404040;
+    color: white;
+    border: none;
+}
+
+.game-controls-fixed .btn-secondary:hover {
+    background-color: #505050;
+    color: white;
 }
 
 /* Game Stats */
