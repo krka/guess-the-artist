@@ -291,6 +291,12 @@ class SpotifyClient {
      */
     async getClientCredentialsToken() {
         try {
+            console.log('Client credentials request:', {
+                clientId: this.config.clientId,
+                clientSecretLength: this.config.clientSecret?.length,
+                tokenEndpoint: this.config.tokenEndpoint
+            });
+
             const credentials = btoa(`${this.config.clientId}:${this.config.clientSecret}`);
 
             const response = await fetch(this.config.tokenEndpoint, {
@@ -302,9 +308,18 @@ class SpotifyClient {
                 body: 'grant_type=client_credentials',
             });
 
+            console.log('Client credentials response:', response.status, response.statusText);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Client credentials auth failed: ${errorData.error_description || response.statusText}`);
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { error: 'unknown', error_description: errorText };
+                }
+                console.error('Client credentials failed:', errorData);
+                throw new Error(`Client credentials auth failed: ${errorData.error_description || errorData.error || response.statusText}`);
             }
 
             const data = await response.json();
