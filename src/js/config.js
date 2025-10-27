@@ -14,6 +14,10 @@ const SPOTIFY_CONFIG = {
     // Spotify App Client ID (public, safe to commit)
     clientId: 'ec5f94ae62a74407920a3cb46f916fe6',
 
+    // Client Secret - enables anonymous mode via Client Credentials flow
+    // NOTE: Exposed in frontend code - see security discussion
+    clientSecret: '285777f888d74419ab3ff0dd1ae203fb',
+
     // Redirect URI - automatically adapts to environment
     // Localhost: just the origin (https://localhost:8443)
     // GitHub Pages: origin + repo path (https://krka.github.io/guess-the-artist/)
