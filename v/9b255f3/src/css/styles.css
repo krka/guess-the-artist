@@ -967,10 +967,10 @@ select:focus {
     max-width: 100vw;
     /* Calculate max-height to fit everything on screen:
        100vh - fixed buttons (80px)
-             - artist name (2.5rem × 1.2 line-height + margins ≈ 70px)
+             - artist name (2.5rem × 1.2 line-height + margins, allow for wrapping ≈ 100px)
              - padding and spacing (≈ 30px)
-       Total: ~180px */
-    max-height: calc(100vh - 180px);
+       Total: ~210px */
+    max-height: calc(100vh - 210px);
     object-fit: contain;
     border-radius: 0;
 }
@@ -1010,11 +1010,13 @@ select:focus {
     font-weight: bold;
     color: var(--primary-color);
     margin-top: 10px;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     line-height: 1.2;
-    max-height: 120px;
+    max-height: 150px;
     overflow: hidden;
-    text-overflow: ellipsis;
+    text-align: center;
+    word-wrap: break-word;
+    padding: 0 10px;
 }
 
 .artist-popularity {
@@ -1436,10 +1438,10 @@ select:focus {
         width: 100%;
         max-width: 100vw;
         /* On mobile, recalculate:
-           100vh - buttons (80px) - artist name (2rem × 1.2 + margins ≈ 60px)
+           100vh - buttons (80px) - artist name (2rem × 1.2 + margins, allow for wrapping ≈ 90px)
                  - padding and spacing (≈ 20px)
-           Total: ~160px */
-        max-height: calc(100vh - 160px);
+           Total: ~190px */
+        max-height: calc(100vh - 190px);
     }
 
     .artist-name-large {
@@ -1529,9 +1531,10 @@ select:focus {
     width: 100%;
     overflow: hidden;
     background-color: rgba(0, 0, 0, 0.7);
-    padding: 12px 0;
+    padding: 12px 20px;
     border-radius: 25px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    text-align: center;
 }
 
 .hint-text {
@@ -1540,18 +1543,24 @@ select:focus {
     color: var(--primary-color);
     font-size: 1.1rem;
     font-weight: 600;
-    padding-left: 100%; /* Start outside right edge */
+    opacity: 0;
 }
 
-.hint-text.marquee-scroll {
-    animation: marquee 5s linear;
+.hint-text.fade-in-out {
+    animation: fadeInOut 3s ease-in-out;
 }
 
-@keyframes marquee {
+@keyframes fadeInOut {
     0% {
-        transform: translateX(0);
+        opacity: 0;
+    }
+    16.67% {
+        opacity: 1;
+    }
+    83.33% {
+        opacity: 1;
     }
     100% {
-        transform: translateX(-200%); /* Move completely off left edge */
+        opacity: 0;
     }
 }

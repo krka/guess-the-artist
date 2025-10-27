@@ -68,15 +68,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     console.log('Teams and players randomized:', gameConfig.teams);
 
-    // Validate we're logged in
-    if (!spotifyClient.isAuthenticated()) {
-        showStatus('Please log in to play', 'error');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
-        return;
-    }
-
     // Initialize scores
     gameConfig.teams.forEach(team => {
         gameState.scores[team.id] = 0;

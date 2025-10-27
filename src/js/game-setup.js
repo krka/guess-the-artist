@@ -34,8 +34,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     console.log('Page loaded, checking auth state...');
     console.log('URL has code param:', window.location.search.includes('code='));
-    console.log('Is authenticated:', spotifyClient.isAuthenticated());
-    console.log('Refresh token exists:', !!localStorage.getItem('spotify_refresh_token'));
+    console.log('Is user authenticated:', spotifyClient.isUserAuthenticated());
 
     // Check if this is an OAuth callback
     if (window.location.search.includes('code=')) {
@@ -48,24 +47,24 @@ window.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('OAuth callback failed:', error);
             showStatus(`Login failed: ${error.message}`, 'error');
-            showLoginUI();
+            initializeAnonymousUI();
         }
     }
     // Check if user is already logged in
-    else if (spotifyClient.isAuthenticated()) {
+    else if (spotifyClient.isUserAuthenticated()) {
         console.log('User is authenticated, initializing UI...');
         try {
             await initializeAuthenticatedUI();
         } catch (error) {
             console.error('Failed to restore session:', error);
-            showStatus('Session expired. Please log in again.', 'error');
-            showLoginUI();
+            showStatus('Session expired. Using anonymous mode.', 'info');
+            initializeAnonymousUI();
         }
     }
-    // Show login UI
+    // Anonymous mode (default)
     else {
-        console.log('User not authenticated, showing login UI');
-        showLoginUI();
+        console.log('Starting in anonymous mode');
+        initializeAnonymousUI();
     }
 
     setupEventListeners();
@@ -152,14 +151,47 @@ async function handleLogin() {
 }
 
 /**
+ * Initialize UI for anonymous mode (no user login)
+ */
+async function initializeAnonymousUI() {
+    console.log('initializeAnonymousUI called');
+
+    // Hide auth section, show game setup
+    authSection.classList.add('hidden');
+    gameSetupSection.classList.remove('hidden');
+
+    // Restore saved state
+    restoreSavedState();
+
+    // Update user name to show anonymous mode
+    if (userName) {
+        userName.textContent = 'Anonymous Mode';
+    }
+
+    // Update logout button to login button
+    if (logoutButton) {
+        logoutButton.textContent = 'Login for Personalized Features';
+        logoutButton.onclick = handleLogin;
+    }
+
+    // Update playlists tab to show login prompt
+    renderPlaylistsLoginPrompt();
+
+    // Update button state and summary
+    updateStartButtonState();
+    updateReviewSummary();
+
+    showStatus('Ready to play! Login optional for personalized features.', 'success');
+}
+
+/**
  * Handle logout
  */
 function handleLogout() {
     spotifyClient.logout();
-    teams = [];
-    teamsList.innerHTML = '';
+    userPlaylists = [];
     showStatus('Logged out successfully', 'success');
-    showLoginUI();
+    initializeAnonymousUI();
 }
 
 /**
@@ -175,6 +207,12 @@ async function initializeAuthenticatedUI() {
 
     // Restore saved state
     restoreSavedState();
+
+    // Make sure logout button is set correctly
+    if (logoutButton) {
+        logoutButton.textContent = 'Logout';
+        logoutButton.onclick = handleLogout;
+    }
 
     // Load playlists immediately
     loadPlaylists();
@@ -277,14 +315,6 @@ function saveState() {
     } catch (error) {
         console.error('Failed to save state:', error);
     }
-}
-
-/**
- * Show login UI
- */
-function showLoginUI() {
-    authSection.classList.remove('hidden');
-    gameSetupSection.classList.add('hidden');
 }
 
 /**
@@ -449,14 +479,14 @@ async function loadPlaylists() {
     } catch (error) {
         console.error('Failed to load playlists:', error);
 
-        // If refresh token is invalid/revoked, automatically logout and redirect to login
+        // If refresh token is invalid/revoked, switch to anonymous mode
         if (error.message.includes('refresh token') ||
             error.message.includes('Not authenticated') ||
             error.message.includes('revoked')) {
-            showStatus('Session expired. Redirecting to login...', 'error');
+            showStatus('Session expired. Switching to anonymous mode...', 'info');
             setTimeout(() => {
                 spotifyClient.logout();
-                showLoginUI();
+                initializeAnonymousUI();
             }, 2000);
             return;
         }
@@ -484,6 +514,27 @@ async function loadPlaylists() {
  */
 function filterPlaylists(query) {
     renderPlaylists(query);
+}
+
+/**
+ * Render login prompt in playlists tab when not logged in
+ */
+function renderPlaylistsLoginPrompt() {
+    if (!playlistsList) return;
+
+    playlistsList.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px;">
+            <p style="color: #b3b3b3; margin-bottom: 20px;">
+                Login to access your personal Spotify playlists
+            </p>
+            <button onclick="handleLogin()" class="btn-primary" style="max-width: 300px;">
+                Login with Spotify
+            </button>
+        </div>
+    `;
+    playlistsList.classList.remove('hidden');
+    playlistsLoading.classList.add('hidden');
+    playlistsEmpty.classList.add('hidden');
 }
 
 /**
@@ -1019,3 +1070,4 @@ window.removePlaylist = removePlaylist;
 window.removePreviouslyUsed = removePreviouslyUsed;
 window.switchTab = switchTab;
 window.switchInnerTab = switchInnerTab;
+window.handleLogin = handleLogin;

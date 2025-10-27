@@ -68,15 +68,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     console.log('Teams and players randomized:', gameConfig.teams);
 
-    // Validate we're logged in
-    if (!spotifyClient.isAuthenticated()) {
-        showStatus('Please log in to play', 'error');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
-        return;
-    }
-
     // Initialize scores
     gameConfig.teams.forEach(team => {
         gameState.scores[team.id] = 0;
@@ -391,10 +382,6 @@ function showCurrentArtist() {
 
     document.getElementById('artist-name').textContent = artist.name;
 
-    // Show popularity (for debugging/tuning filter)
-    const popularity = artist.popularity || 0;
-    document.getElementById('artist-popularity').textContent = `Popularity: ${popularity}`;
-
     // Track when this artist was shown (for accurate guess timing)
     gameState.currentArtistStartTime = Date.now();
 
@@ -448,7 +435,7 @@ function scheduleHints(tracks) {
 }
 
 /**
- * Show a hint with marquee animation
+ * Show a hint with fade in/out animation
  */
 function showHint(trackName) {
     const hintMarquee = document.getElementById('hint-marquee');
@@ -463,14 +450,14 @@ function showHint(trackName) {
     hintMarquee.classList.remove('hidden');
 
     // Restart animation by removing and re-adding class
-    hintText.classList.remove('marquee-scroll');
+    hintText.classList.remove('fade-in-out');
     void hintText.offsetWidth; // Force reflow
-    hintText.classList.add('marquee-scroll');
+    hintText.classList.add('fade-in-out');
 
-    // Hide after animation completes (5 seconds)
+    // Hide after animation completes (3 seconds: 0.5s fade in + 2s stay + 0.5s fade out)
     setTimeout(() => {
         hintMarquee.classList.add('hidden');
-    }, 5000);
+    }, 3000);
 }
 
 /**

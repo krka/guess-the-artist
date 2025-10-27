@@ -228,7 +228,7 @@ class SpotifyClient {
     }
 
     /**
-     * Ensure we have a valid access token
+     * Ensure we have a valid access token (supports both user auth and anonymous mode)
      */
     async ensureAuthenticated() {
         console.log('ensureAuthenticated called', {
@@ -239,7 +239,7 @@ class SpotifyClient {
             isExpired: this.tokenExpiry ? (Date.now() >= this.tokenExpiry - 5 * 60 * 1000) : 'N/A'
         });
 
-        // If no access token, try to restore from refresh token
+        // If no access token, try to restore from refresh token OR use anonymous mode
         if (!this.accessToken) {
             const refreshToken = localStorage.getItem('spotify_refresh_token');
             if (refreshToken) {
@@ -248,13 +248,22 @@ class SpotifyClient {
                 await this.refreshAccessToken();
                 return;
             }
-            throw new Error('Not authenticated. Please log in.');
+            // No user auth - use anonymous mode (client credentials)
+            console.log('No user auth, using anonymous mode (client credentials)...');
+            await this.getClientCredentialsToken();
+            return;
         }
 
         // If token is expired or about to expire (within 5 min), refresh it
         if (Date.now() >= this.tokenExpiry - 5 * 60 * 1000) {
             console.log('Access token expired or expiring soon, refreshing...');
-            await this.refreshAccessToken();
+            // If we have a refresh token (user mode), use it
+            if (this.isUserAuthenticated()) {
+                await this.refreshAccessToken();
+            } else {
+                // Anonymous mode - get new client credentials token
+                await this.getClientCredentialsToken();
+            }
         }
     }
 
@@ -274,6 +283,64 @@ class SpotifyClient {
         this.tokenExpiry = null;
         localStorage.removeItem('spotify_refresh_token');
         localStorage.removeItem('spotify_code_verifier');
+    }
+
+    /**
+     * Get access token using Client Credentials flow (anonymous mode)
+     * This allows public API access without user login
+     */
+    async getClientCredentialsToken() {
+        try {
+            console.log('Client credentials request:', {
+                clientId: this.config.clientId,
+                clientSecretLength: this.config.clientSecret?.length,
+                tokenEndpoint: this.config.tokenEndpoint
+            });
+
+            const credentials = btoa(`${this.config.clientId}:${this.config.clientSecret}`);
+
+            const response = await fetch(this.config.tokenEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${credentials}`,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'grant_type=client_credentials',
+            });
+
+            console.log('Client credentials response:', response.status, response.statusText);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    errorData = { error: 'unknown', error_description: errorText };
+                }
+                console.error('Client credentials failed:', errorData);
+                throw new Error(`Client credentials auth failed: ${errorData.error_description || errorData.error || response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            this.accessToken = data.access_token;
+            this.tokenExpiry = Date.now() + data.expires_in * 1000;
+            // No refresh token in client credentials flow
+
+            console.log('Client credentials token obtained (anonymous mode)');
+            return this.accessToken;
+        } catch (error) {
+            console.error('Client credentials error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Check if we're in user-authenticated mode (vs anonymous mode)
+     */
+    isUserAuthenticated() {
+        return !!this.refreshToken || !!localStorage.getItem('spotify_refresh_token');
     }
 
     /**
